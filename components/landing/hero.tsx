@@ -34,10 +34,10 @@ export function Hero() {
       </div>
 
       <div className="relative flex w-full max-w-[830px] min-w-0 flex-col items-start gap-6 sm:gap-10 lg:max-w-[560px] lg:flex-1 xl:max-w-[700px] 2xl:max-w-[830px]">
-        <SectionBadge className="gap-2">
-          <Star className="size-5 shrink-0 fill-current" strokeWidth={0} />
-          Trusted by 40,000+ homeowners
-        </SectionBadge>
+        <div className="border-lawn-badge-border bg-lawn-badge-bg text-lawn-primary inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm">
+          <Star className="size-5 shrink-0 fill-current text-[#eecb62]" strokeWidth={0} />
+          <span>Trusted by 40,000+ homeowners</span>
+        </div>
 
         <div className="flex flex-col gap-4 sm:gap-8">
           <h1 className="text-lawn-text-primary font-heading text-3xl leading-tight font-bold tracking-tight sm:text-4xl sm:leading-[1.15] lg:text-4xl lg:leading-[1.15] 2xl:text-5xl 2xl:leading-[56px]">
@@ -77,9 +77,9 @@ export function Hero() {
         {TESTIMONIALS.map((testimonial, index) => (
           <div
             key={index}
-            className="absolute hidden w-[405px] flex-col items-start gap-2.5 rounded-2xl bg-white/84 p-6 backdrop-blur-sm 2xl:flex"
+            className="absolute hidden w-[405px] flex-col items-start gap-2.5 rounded-2xl bg-white/84 p-6 backdrop-blur-[2px] 2xl:flex"
             style={
-              index === 0 ? { left: "116px", top: "0" } : { left: "0", top: "312px" }
+              index === 0 ? { left: "500px", top: "0" } : { left: "370px", top: "312px" }
             }
           >
             <span className="font-heading text-3xl leading-5 text-[#eecb62]" aria-hidden>

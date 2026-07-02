@@ -55,8 +55,8 @@ export function HowItWorks() {
                 height={28}
                 className={
                   step.arc === "left"
-                    ? "pointer-events-none absolute top-[-49px] left-[calc(50%+63px)] hidden 2xl:block"
-                    : "pointer-events-none absolute top-[-4px] left-[calc(50%+63px)] hidden -scale-y-100 2xl:block"
+                    ? "pointer-events-none absolute top-1/2 left-[calc(50%+63px)] hidden -translate-y-[79px] 2xl:block"
+                    : "pointer-events-none absolute top-1/2 left-[calc(50%+63px)] hidden -translate-y-[4px] -scale-y-100 2xl:block"
                 }
               />
             ) : null}
