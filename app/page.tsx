@@ -1,16 +1,29 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Navbar } from "@/components/landing/navbar";
+import { Hero } from "@/components/landing/hero";
+import { Services } from "@/components/landing/services";
+import { WhyUs } from "@/components/landing/why-us";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { BeforeAfter } from "@/components/landing/before-after";
+import { Reviews } from "@/components/landing/reviews";
+import { Faq } from "@/components/landing/faq";
+import { Cta } from "@/components/landing/cta";
+import { Footer } from "@/components/landing/footer";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-32 text-center">
-      <h1 className="text-3xl font-semibold tracking-tight">LawnFrontend</h1>
-      <p className="text-muted-foreground max-w-md">
-        Start by reading <code className="bg-muted rounded px-1 py-0.5">README.md</code>{" "}
-        for the project structure and conventions, then check out the reference feature
-        below.
-      </p>
-      <Button render={<Link href="/example-todos" />}>View example feature</Button>
-    </main>
+    <>
+      <Navbar />
+      <main className="flex flex-1 flex-col">
+        <Hero />
+        <Services />
+        <WhyUs />
+        <HowItWorks />
+        <BeforeAfter />
+        <Reviews />
+        <Faq />
+        <Cta />
+      </main>
+      <Footer />
+    </>
   );
 }

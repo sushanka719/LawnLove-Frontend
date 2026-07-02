@@ -46,6 +46,56 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Typography — font weight */
+  --font-weight-extralight: 200;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Typography — display scale (hero / marketing headlines) */
+  --text-display-2xl: ;
+  --text-display-2xl--line-height: ;
+  --text-display-2xl--letter-spacing: ;
+  --text-display-xl: ;
+  --text-display-xl--line-height: ;
+  --text-display-xl--letter-spacing: ;
+  --text-display-lg: ;
+  --text-display-lg--line-height: ;
+  --text-display-lg--letter-spacing: ;
+  --text-display-md: ;
+  --text-display-md--line-height: ;
+  --text-display-md--letter-spacing: ;
+  --text-display-sm: ;
+  --text-display-sm--line-height: ;
+  --text-display-xs: ;
+  --text-display-xs--line-height: ;
+
+  /* Typography — body/text scale */
+  --text-xl: ;
+  --text-xl--line-height: ;
+  --text-lg: ;
+  --text-lg--line-height: ;
+  --text-base: ;
+  --text-base--line-height: ;
+  --text-sm: ;
+  --text-sm--line-height: ;
+  --text-xs: ;
+  --text-xs--line-height: ;
+
+  /* Marketing site — LawnLove brand tokens */
+  --color-lawn-primary: #195134;
+  --color-lawn-primary-light: #35ab6e;
+  --color-lawn-bg-1: #fdf7e2;
+  --color-lawn-bg-2: #fffcf5;
+  --color-lawn-badge-bg: rgba(225, 229, 204, 0.53);
+  --color-lawn-badge-border: #d1d7b1;
+  --color-lawn-text-primary: #1a1a1a;
+  --color-lawn-text-secondary: #525252;
+  --font-heading-marketing: var(--font-sans);
 }
 
 :root {
@@ -126,5 +176,15 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  .lawn-gradient-btn {
+    background-image: linear-gradient(
+      180deg,
+      var(--color-lawn-primary-light) 0%,
+      var(--color-lawn-primary) 100%
+    );
   }
 }
