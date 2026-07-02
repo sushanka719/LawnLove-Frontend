@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp *)",
+      "Bash(claude plugin *)",
+      "mcp__plugin_figma_figma__get_design_context",
+      "mcp__plugin_figma_figma__get_metadata",
+      "Bash(mkdir -p public/landing)",
+      "Bash(curl -sSL -o hero-person.png \"https://www.figma.com/api/mcp/asset/d2bc5908-b8dc-4b3e-9e23-6a71f0649b64\")",
+      "Bash(node -e \"console.log\\(Object.keys\\(require\\('/home/next-evolvion/Desktop/LawnHate/LawnFrontend/node_modules/lucide-react'\\)\\).filter\\(k=>/Chevron|Plus|Minus|MapPin|Star|Quote|Github|Twitter|Linkedin/.test\\(k\\)\\).slice\\(0,30\\)\\)\")",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

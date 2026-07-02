@@ -29,12 +29,12 @@ export function WhyUs() {
   return (
     <section
       id="why-us"
-      className="bg-lawn-bg-2 flex flex-col items-center justify-center gap-16 px-[240px] py-24"
+      className="bg-lawn-bg-2 flex flex-col items-center justify-center gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:gap-16 lg:px-[240px]"
     >
       <SectionHeading eyebrow="Why Lawnlove" title="Why Homeowners Choose Us" />
 
-      <div className="flex w-full flex-col items-start gap-16">
-        <div className="flex w-full items-start gap-6">
+      <div className="flex w-full flex-col items-start gap-10 lg:gap-16">
+        <div className="grid w-full grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:flex">
           {FEATURES.map((feature) => (
             <div key={feature.title} className="flex flex-1 items-center gap-4">
               <div className="bg-lawn-bg-2 shrink-0 rounded-lg p-2 drop-shadow-[4px_4px_8px_rgba(0,0,0,0.18)]">
@@ -52,7 +52,7 @@ export function WhyUs() {
           ))}
         </div>
 
-        <div className="relative h-[450px] w-full overflow-hidden rounded-tl-[80px] rounded-tr-3xl rounded-br-[80px] rounded-bl-3xl">
+        <div className="relative h-[220px] w-full overflow-hidden rounded-tl-[40px] rounded-tr-2xl rounded-br-[40px] rounded-bl-2xl sm:h-[320px] lg:h-[450px] lg:rounded-tl-[80px] lg:rounded-tr-3xl lg:rounded-br-[80px] lg:rounded-bl-3xl">
           <Image
             src="/landing/whyus-banner.jpg"
             alt="Professional mowing a lawn"

@@ -41,7 +41,7 @@ export function Reviews() {
   }
 
   return (
-    <section className="bg-lawn-bg-2 flex flex-col items-center justify-center gap-16 overflow-hidden px-[240px] py-24">
+    <section className="bg-lawn-bg-2 flex flex-col items-center justify-center gap-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 lg:gap-16 lg:px-[240px]">
       <SectionHeading
         eyebrow="Reviews"
         title="Loved by Homeowners"
@@ -56,18 +56,18 @@ export function Reviews() {
           <div
             key={index}
             className={
-              "flex w-84 shrink-0 snap-start flex-col justify-between gap-24 rounded-[10.8px] p-6 " +
+              "flex w-72 shrink-0 snap-start flex-col justify-between gap-16 rounded-[10.8px] p-5 sm:w-84 sm:gap-24 sm:p-6 " +
               (testimonial.featured ? "bg-lawn-badge-bg" : "bg-[#f5f7ee]")
             }
           >
             <div className="flex flex-col items-start gap-3">
               <span
-                className="font-heading text-6xl leading-[72px] text-[#eecb62]"
+                className="font-heading text-5xl leading-[60px] text-[#eecb62] sm:text-6xl sm:leading-[72px]"
                 aria-hidden
               >
                 “
               </span>
-              <p className="text-lawn-text-primary text-2xl leading-8 font-semibold tracking-tight">
+              <p className="text-lawn-text-primary text-lg leading-7 font-semibold tracking-tight sm:text-2xl sm:leading-8">
                 “{testimonial.quote}”
               </p>
             </div>

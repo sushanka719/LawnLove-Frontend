@@ -23,12 +23,12 @@ export function SectionHeading({
       )}
     >
       <SectionBadge>{eyebrow}</SectionBadge>
-      <div className="flex flex-col gap-6">
-        <h2 className="text-lawn-text-primary text-4xl leading-[1.2] font-bold tracking-tight text-balance">
+      <div className="flex flex-col gap-3 sm:gap-6">
+        <h2 className="text-lawn-text-primary text-2xl leading-tight font-bold tracking-tight text-balance sm:text-3xl sm:leading-[1.2] lg:text-4xl">
           {title}
         </h2>
         {description ? (
-          <p className="text-lawn-text-secondary text-xl leading-7 text-balance">
+          <p className="text-lawn-text-secondary text-base leading-6 text-balance sm:text-xl sm:leading-7">
             {description}
           </p>
         ) : null}

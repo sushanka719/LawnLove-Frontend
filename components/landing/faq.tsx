@@ -35,35 +35,35 @@ const FAQ_ITEMS = [
 
 export function Faq() {
   return (
-    <section className="bg-lawn-bg-2 flex items-start gap-24 px-[240px] py-24">
-      <div className="flex w-[658px] shrink-0 flex-col items-start justify-center gap-4">
+    <section className="bg-lawn-bg-2 flex flex-col items-start gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:flex-row lg:gap-10 lg:px-10 lg:py-24 xl:gap-16 xl:px-16 2xl:gap-24 2xl:px-[240px]">
+      <div className="flex w-full min-w-0 flex-col items-start justify-center gap-4 lg:w-[300px] lg:shrink-0 xl:w-[400px] 2xl:w-[658px]">
         <SectionBadge>FAQ</SectionBadge>
-        <div className="flex flex-col items-start gap-6">
-          <h2 className="text-lawn-text-primary text-4xl leading-[48px] font-bold tracking-tight">
+        <div className="flex flex-col items-start gap-4 sm:gap-6">
+          <h2 className="text-lawn-text-primary text-2xl leading-tight font-bold tracking-tight sm:text-3xl sm:leading-[1.2] lg:text-4xl lg:leading-[48px]">
             Frequently Asked Questions
           </h2>
-          <p className="text-lawn-text-secondary max-w-[526px] text-xl leading-7">
+          <p className="text-lawn-text-secondary max-w-[526px] text-base leading-6 sm:text-xl sm:leading-7">
             Have questions? We&apos;ve answered the most common ones below.
           </p>
         </div>
       </div>
 
-      <Accordion.Root className="flex flex-1 flex-col items-start gap-4">
+      <Accordion.Root className="flex w-full min-w-0 flex-1 flex-col items-start gap-4">
         {FAQ_ITEMS.map((item) => (
           <Accordion.Item
             key={item.question}
             className="bg-lawn-bg-2 w-full overflow-hidden rounded-[14px] shadow-[0px_4px_16px_0px_rgba(111,111,111,0.18)]"
           >
             <Accordion.Header>
-              <Accordion.Trigger className="group flex w-full items-center justify-between gap-4 px-6 py-4 text-left">
-                <span className="text-lawn-primary text-lg leading-7 font-semibold tracking-tight">
+              <Accordion.Trigger className="group flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-6">
+                <span className="text-lawn-primary text-base leading-6 font-semibold tracking-tight sm:text-lg sm:leading-7">
                   {item.question}
                 </span>
                 <Plus className="text-lawn-primary size-4 shrink-0 group-data-[panel-open]:hidden" />
                 <Minus className="text-lawn-primary hidden size-4 shrink-0 group-data-[panel-open]:block" />
               </Accordion.Trigger>
             </Accordion.Header>
-            <Accordion.Panel className="text-lawn-text-secondary px-6 pb-4 text-base leading-6 tracking-tight">
+            <Accordion.Panel className="text-lawn-text-secondary px-4 pb-4 text-base leading-6 tracking-tight sm:px-6">
               {item.answer}
             </Accordion.Panel>
           </Accordion.Item>
