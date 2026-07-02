@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LawnFrontend
 
-## Getting Started
+Next.js (App Router) + TypeScript + Tailwind v4 + shadcn/ui + React Query + zustand + zod + react-hook-form.
 
-First, run the development server:
+> Read [AGENTS.md](./AGENTS.md) before writing code. This project runs a newer
+> Next.js version than most training data / tutorials — API's and conventions
+> may differ from what you're used to.
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local   # fill in real values
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Also visit `/example-todos` — it's a fully wired
+reference feature (see "Adding a new feature" below).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script              | What it does                        |
+| ------------------- | ----------------------------------- |
+| `pnpm dev`          | Start the dev server                |
+| `pnpm build`        | Production build                    |
+| `pnpm start`        | Run the production build            |
+| `pnpm lint`         | Lint                                |
+| `pnpm lint:fix`     | Lint, fixing what's auto-fixable    |
+| `pnpm format`       | Format the whole repo with Prettier |
+| `pnpm format:check` | Check formatting without writing    |
+| `pnpm typecheck`    | Run `tsc --noEmit`                  |
 
-## Learn More
+A pre-commit hook (husky + lint-staged) automatically lints and formats
+staged files — you don't need to run `format`/`lint:fix` manually before
+committing.
 
-To learn more about Next.js, take a look at the following resources:
+## Project structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/                    # Routes only (App Router). Keep pages thin — they
+                         # compose components from features/ and components/.
+  layout.tsx            # Root layout, wraps the app in Providers
+  providers.tsx          # Client-side context providers (React Query, Toaster)
+  page.tsx
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+features/                # One folder per domain feature. This is where most
+                         # day-to-day work happens.
+  example-todos/
+    api.ts               # React Query hooks (useX / useCreateX)
+    schema.ts             # zod schemas + inferred types
+    store.ts              # zustand store for UI-only state local to the feature
+    components/           # Feature-specific components
+    index.ts              # Public exports — import from "@/features/x", not
+                           # from internal files
 
-## Deploy on Vercel
+components/
+  ui/                    # shadcn/ui primitives — generated, don't hand-edit
+                         # unless you know what you're doing. Add more with
+                         # `pnpm dlx shadcn@latest add @shadcn/<name>`
+  (shared components that aren't feature-specific go here)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+lib/
+  api-client.ts          # Thin typed fetch wrapper, reads config/env.ts
+  query-client.ts         # React Query client factory
+  utils.ts                # `cn()` and other small helpers
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+store/                   # zustand stores shared across features (global UI
+                         # state, e.g. auth session, theme). Feature-local
+                         # state belongs in features/*/store.ts instead.
+
+hooks/                    # Shared React hooks not tied to one feature
+
+types/                    # Shared TypeScript types not tied to one feature
+
+config/
+  env.ts                  # zod-validated environment variables — import
+                         # `env` from here, never read `process.env` directly
+```
+
+### Adding a new feature
+
+Copy `features/example-todos/` as a starting point:
+
+1. **`schema.ts`** — define your zod schema(s) and export inferred types.
+2. **`api.ts`** — write `fetchX`/`createX` functions using `apiClient` from
+   `@/lib/api-client`, then wrap them in `useQuery`/`useMutation` hooks.
+3. **`store.ts`** — only if the feature needs client-side UI state that
+   doesn't belong in the server (filters, selection, wizard step, etc).
+   Server data always goes through React Query, not zustand.
+4. **`components/`** — build UI with shadcn primitives from `@/components/ui`.
+   Use `react-hook-form` + `@hookform/resolvers/zod` for any form, validating
+   against the schema from step 1.
+5. **`index.ts`** — export what other code is allowed to import.
+6. Wire it into a route under `app/`.
+
+### Conventions
+
+- **Server state vs. client state**: anything that comes from an API goes
+  through React Query. zustand is only for state React Query doesn't own
+  (UI toggles, filters, multi-step form state, etc).
+- **Validation**: any data crossing a boundary (form input, API response,
+  env vars) should be parsed with zod, not just typed.
+- **Imports**: use the `@/` alias (maps to the repo root) instead of relative
+  `../../..` paths.
+- **shadcn components**: this project uses the `base-nova` style, which is
+  built on `@base-ui/react` — not Radix. Polymorphism uses a `render` prop
+  (`<Button render={<Link href="/x" />}>`), not `asChild`.
+- **Environment variables**: add new ones to both `.env.example` and the
+  schema in `config/env.ts`. The app fails fast at startup if a required
+  var is missing or invalid.
+
+## Learn more
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [TanStack Query](https://tanstack.com/query/latest)
+- [zustand](https://zustand.docs.pmnd.rs/)
+- [zod](https://zod.dev/)
+- [shadcn/ui](https://ui.shadcn.com/)
