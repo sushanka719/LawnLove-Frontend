@@ -7,13 +7,14 @@ type LawnButtonProps = {
   href?: string;
   variant?: "solid" | "outline" | "outline-light";
   className?: string;
-};
+} & Omit<React.ComponentProps<typeof Link>, "href" | "className" | "children">;
 
 export function LawnButton({
   children,
   href = "#",
   variant = "solid",
   className,
+  ...rest
 }: LawnButtonProps) {
   return (
     <Link
@@ -27,6 +28,7 @@ export function LawnButton({
         variant === "outline-light" && "border-[1.2px] border-white text-white",
         className,
       )}
+      {...rest}
     >
       {children}
     </Link>

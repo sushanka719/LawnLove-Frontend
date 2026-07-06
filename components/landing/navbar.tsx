@@ -53,7 +53,7 @@ export function Navbar() {
             Get a Quote
           </LawnButton>
           <LawnButton
-            href="#login"
+            href="/login"
             className="px-4 py-2.5 text-sm 2xl:px-8 2xl:py-3 2xl:text-base"
           >
             Log in / Sign up
@@ -92,7 +92,7 @@ export function Navbar() {
             <LawnButton href="#quote" variant="outline" className="w-full">
               Get a Quote
             </LawnButton>
-            <LawnButton href="#login" className="w-full">
+            <LawnButton href="/login" className="w-full">
               Log in / Sign up
             </LawnButton>
           </div>

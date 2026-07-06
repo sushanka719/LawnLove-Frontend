@@ -27,7 +27,7 @@ export function Cta() {
             </p>
           </div>
           <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
-            <LawnButton href="#signup" variant="outline-light">
+            <LawnButton href="/signup" variant="outline-light">
               Sign up
             </LawnButton>
             <LawnButton href="#quote">Get an Instant Quote</LawnButton>
