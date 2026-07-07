@@ -20,7 +20,10 @@ const TESTIMONIALS = [
 
 export function Hero() {
   return (
-    <section className="bg-lawn-bg-2 relative flex flex-col items-center overflow-hidden px-4 py-16 sm:px-6 sm:py-20 lg:flex-row lg:gap-10 lg:px-10 lg:py-20 xl:gap-16 xl:px-16 xl:py-24 2xl:px-[240px] 2xl:py-[125px]">
+    <section
+      id="home"
+      className="bg-lawn-bg-2 relative flex min-h-[calc(90vh)] scroll-mt-24 flex-col items-center overflow-hidden px-4 py-16 sm:px-6 sm:py-20 lg:flex-row lg:gap-10 lg:px-10 lg:py-20 xl:gap-16 xl:px-16 xl:py-24 2xl:px-[240px] 2xl:py-[125px]"
+    >
       <div className="absolute inset-0 lg:hidden">
         <Image
           src="/landing/hero-photo.png"
