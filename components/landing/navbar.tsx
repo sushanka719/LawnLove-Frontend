@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,7 +17,7 @@ import {
 import { useSession, useSignOut } from "@/hooks/use-session";
 
 const MENU_ITEMS = [
-  { label: "Home", href: "#", active: true },
+  { label: "Home", href: "#home" },
   { label: "Services", href: "#services" },
   { label: "How it Works", href: "#how-it-works" },
   { label: "Why us", href: "#why-us" },
@@ -75,6 +75,52 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const { data: session, isPending } = useSession();
   const isLoggedIn = !isPending && !!session?.user;
+  const [activeHref, setActiveHref] = useState("#home");
+  const isClickScrolling = useRef(false);
+  const clickScrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const id = href.replace("#", "");
+    const element = document.getElementById(id);
+    if (element) {
+      isClickScrolling.current = true;
+      setActiveHref(href);
+      element.scrollIntoView({ behavior: "smooth" });
+
+      if (clickScrollTimeout.current) clearTimeout(clickScrollTimeout.current);
+      clickScrollTimeout.current = setTimeout(() => {
+        isClickScrolling.current = false;
+      }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    const sectionIds = MENU_ITEMS.map((item) => item.href.replace("#", ""));
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isClickScrolling.current) return;
+
+        const visible = entries.filter((entry) => entry.isIntersecting);
+        if (visible.length > 0) {
+          const closest = visible.reduce((best, entry) => {
+            const bestDist = Math.abs(best.boundingClientRect.top);
+            const entryDist = Math.abs(entry.boundingClientRect.top);
+            return entryDist < bestDist ? entry : best;
+          });
+          setActiveHref(`#${closest.target.id}`);
+        }
+      },
+      { rootMargin: "-40% 0px -55% 0px", threshold: 0 },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <header className="bg-lawn-bg-2 sticky top-0 z-50 shadow-[4px_0px_16px_0px_rgba(119,119,119,0.25)]">
@@ -91,8 +137,9 @@ export function Navbar() {
             <Link
               key={item.label}
               href={item.href}
+              onClick={(e) => handleScroll(e, item.href)}
               className={
-                item.active
+                activeHref === item.href
                   ? "text-lawn-primary border-lawn-primary flex items-center justify-center border-b pb-0.5 text-sm font-semibold tracking-tight whitespace-nowrap 2xl:text-base"
                   : "flex items-center justify-center pb-0.5 text-sm font-semibold tracking-tight whitespace-nowrap text-[#4d4d4d] 2xl:text-base"
               }
@@ -139,9 +186,12 @@ export function Navbar() {
               <Link
                 key={item.label}
                 href={item.href}
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  handleScroll(e, item.href);
+                  setOpen(false);
+                }}
                 className={
-                  item.active
+                  activeHref === item.href
                     ? "text-lawn-primary text-base font-semibold tracking-tight"
                     : "text-base font-semibold tracking-tight text-[#4d4d4d]"
                 }
