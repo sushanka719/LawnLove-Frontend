@@ -119,7 +119,12 @@ export function Navbar() {
     );
 
     sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (clickScrollTimeout.current) {
+        clearTimeout(clickScrollTimeout.current);
+      }
+    };
   }, []);
 
   return (

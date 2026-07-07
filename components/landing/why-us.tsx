@@ -29,7 +29,7 @@ export function WhyUs() {
   return (
     <section
       id="why-us"
-      className="bg-lawn-bg-2 flex min-h-[calc(100vh)] flex-col items-center justify-center gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:gap-16 lg:px-[240px]"
+      className="bg-lawn-bg-2 flex min-h-screen scroll-mt-5 flex-col items-center justify-center gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:gap-16 lg:px-[240px]"
     >
       <SectionHeading eyebrow="Why Lawnlove" title="Why Homeowners Choose Us" />
 
