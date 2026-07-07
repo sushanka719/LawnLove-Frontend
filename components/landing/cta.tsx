@@ -4,7 +4,10 @@ import { LawnButton } from "@/components/landing/lawn-button";
 
 export function Cta() {
   return (
-    <section className="bg-lawn-bg-2 flex items-center justify-center px-4 py-16 sm:px-6 sm:py-24 lg:px-[240px]">
+    <section
+      id="contact"
+      className="bg-lawn-bg-2 flex min-h-[calc(100vh)] items-center justify-center px-4 py-16 sm:px-6 sm:py-24 lg:px-[240px]"
+    >
       <div className="relative h-[420px] w-full overflow-hidden rounded-[20px] sm:h-[437px] sm:rounded-[32px]">
         <Image
           src="/landing/cta-background.png"

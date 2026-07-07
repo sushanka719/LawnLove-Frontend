@@ -6,9 +6,10 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
 import { LawnButton } from "@/components/landing/lawn-button";
+import { HtmlContext } from "next/dist/server/route-modules/pages/vendored/contexts/entrypoints";
 
 const MENU_ITEMS = [
-  { label: "Home", href: "#", active: true },
+  { label: "Home", href: "#home", active: true },
   { label: "Services", href: "#services" },
   { label: "How it Works", href: "#how-it-works" },
   { label: "Why us", href: "#why-us" },
@@ -17,6 +18,15 @@ const MENU_ITEMS = [
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const id = href.replace("#", "");
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   return (
     <header className="bg-lawn-bg-2 sticky top-0 z-50 shadow-[4px_0px_16px_0px_rgba(119,119,119,0.25)]">
@@ -33,6 +43,7 @@ export function Navbar() {
             <Link
               key={item.label}
               href={item.href}
+              onClick={(e) => handleScroll(e, item.href)}
               className={
                 item.active
                   ? "text-lawn-primary border-lawn-primary flex items-center justify-center border-b pb-0.5 text-sm font-semibold tracking-tight whitespace-nowrap 2xl:text-base"
