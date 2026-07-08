@@ -23,9 +23,6 @@ const signUpSchema = z.object({
   name: z.string().min(2, "Enter your full name"),
   email: z.email("Enter a valid email address"),
   rememberMe: z.boolean(),
-  agreeToTerms: z.boolean().refine((val) => val === true, {
-    message: "You must agree to the Terms of Use and Privacy Policy",
-  }),
 });
 
 type SignUpValues = z.infer<typeof signUpSchema>;
@@ -39,15 +36,15 @@ export default function SignUpPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_COOLDOWN_SECONDS);
   const [isResending, setIsResending] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { name: "", email: "", rememberMe: false },
+    mode: "onChange",
   });
 
   useEffect(() => {
@@ -141,21 +138,11 @@ export default function SignUpPage() {
       title="Create your account"
       footer={
         <div className="flex items-start gap-2 text-left">
-          <Checkbox
-            id="agree-to-terms"
-            checked={agreedToTerms}
-            onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
-            className="mt-0.5"
-          />
           <label htmlFor="agree-to-terms" className="text-sm leading-normal">
-            I have read and agree to our{" "}
+            By continuing, you agree to LawnLove{" "}
             <Link href="/terms" className="underline">
-              Terms of Use
+              Terms and Privacy
             </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="underline">
-              Privacy Policy.
-            </Link>
           </label>
         </div>
       }
@@ -198,7 +185,10 @@ export default function SignUpPage() {
 
         {formError && <p className="text-destructive text-center text-sm">{formError}</p>}
 
-        <SubmitButton disabled={isSubmitting}>
+        <SubmitButton
+          disabled={isSubmitting || !isValid}
+          className="disabled:cursor-not-allowed disabled:bg-[#195134]/40 disabled:hover:bg-[#195134]/40"
+        >
           {isSubmitting ? "Signing up..." : "Sign up"}
         </SubmitButton>
       </form>
