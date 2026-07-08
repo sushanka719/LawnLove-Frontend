@@ -17,7 +17,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { AuthError, signInWithGoogle, signUpWithMagicLink } from "@/lib/auth-client";
 import { getWebmailUrl, slugifyUsername } from "@/lib/utils";
 
-const RESEND_COOLDOWN_SECONDS = 30;
+const RESEND_COOLDOWN_SECONDS = 60;
 
 const signUpSchema = z.object({
   name: z.string().min(2, "Enter your full name"),
