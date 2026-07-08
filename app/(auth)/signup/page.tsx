@@ -137,14 +137,14 @@ export default function SignUpPage() {
     <AuthCard
       title="Create your account"
       footer={
-        <div className="flex items-start gap-2 text-left">
+        <span className="flex items-start gap-2 text-left">
           <label htmlFor="agree-to-terms" className="text-sm leading-normal">
             By continuing, you agree to LawnLove{" "}
             <Link href="/terms" className="underline">
               Terms and Privacy
             </Link>{" "}
           </label>
-        </div>
+        </span>
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex w-full flex-col gap-4">
