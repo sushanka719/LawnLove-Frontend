@@ -23,6 +23,9 @@ const signUpSchema = z.object({
   name: z.string().min(2, "Enter your full name"),
   email: z.email("Enter a valid email address"),
   rememberMe: z.boolean(),
+  agreeToTerms: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the Terms of Use and Privacy Policy",
+  }),
 });
 
 type SignUpValues = z.infer<typeof signUpSchema>;
@@ -36,6 +39,7 @@ export default function SignUpPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_COOLDOWN_SECONDS);
   const [isResending, setIsResending] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const {
     register,
     handleSubmit,
@@ -136,16 +140,24 @@ export default function SignUpPage() {
     <AuthCard
       title="Create your account"
       footer={
-        <>
-          I have read and agree to our{" "}
-          <Link href="/terms" className="underline">
-            Terms of Use
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="underline">
-            Privacy Policy.
-          </Link>
-        </>
+        <div className="flex items-start gap-2 text-left">
+          <Checkbox
+            id="agree-to-terms"
+            checked={agreedToTerms}
+            onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+            className="mt-0.5"
+          />
+          <label htmlFor="agree-to-terms" className="text-sm leading-normal">
+            I have read and agree to our{" "}
+            <Link href="/terms" className="underline">
+              Terms of Use
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline">
+              Privacy Policy.
+            </Link>
+          </label>
+        </div>
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex w-full flex-col gap-4">
