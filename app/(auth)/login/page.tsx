@@ -15,10 +15,11 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { AuthError, signInWithEmail, signInWithGoogle } from "@/lib/auth-client";
+import { emailSchema, loginPasswordSchema } from "@/lib/validation/auth-schemas";
 
 const signInSchema = z.object({
-  email: z.email("Enter a valid email address"),
-  password: z.string().min(1, "Enter your password"),
+  email: emailSchema,
+  password: loginPasswordSchema,
   rememberMe: z.boolean(),
 });
 

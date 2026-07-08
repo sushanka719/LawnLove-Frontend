@@ -11,14 +11,15 @@ import { AuthTextField } from "@/components/auth/auth-text-field";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { AuthError, setPassword } from "@/lib/auth-client";
+import { newPasswordSchema } from "@/lib/validation/auth-schemas";
 
 const setPasswordSchema = z
   .object({
-    newPassword: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
+    newPassword: newPasswordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password."),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
+    message: "Passwords do not match.",
     path: ["confirmPassword"],
   });
 

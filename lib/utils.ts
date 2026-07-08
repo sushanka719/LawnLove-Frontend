@@ -19,12 +19,20 @@ export function getWebmailUrl(email: string) {
   return (domain && WEBMAIL_URLS[domain]) || `mailto:${email}`;
 }
 
+// Must always satisfy the backend's USERNAME_REGEX
+// (LawnBackend/src/auth/validation.constants.ts): lowercase, starts with a
+// letter, only [a-z0-9_.], no consecutive "." or "_", 3-30 chars. The user
+// never sees or edits this value, so it must never be able to fail
+// server-side validation regardless of what `name` contains.
 export function slugifyUsername(name: string) {
-  const base = name
+  const collapsed = name
     .toLowerCase()
     .replace(/[^a-z0-9_.\s]/g, "")
     .trim()
-    .replace(/\s+/g, "_");
-  const padded = base.length < 3 ? `${base}user` : base;
-  return `${padded.slice(0, 26)}${Math.floor(1000 + Math.random() * 9000)}`;
+    .replace(/\s+/g, "_")
+    .replace(/[_.]{2,}/g, "_")
+    .replace(/^[^a-z]+/, "");
+  const suffix = Math.floor(1000 + Math.random() * 9000);
+  const base = collapsed.length > 0 ? collapsed : "user";
+  return `${base.slice(0, 25)}${suffix}`;
 }

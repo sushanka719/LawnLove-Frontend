@@ -11,9 +11,10 @@ import { AuthTextField } from "@/components/auth/auth-text-field";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError } from "@/components/ui/field";
 import { AuthError, requestPasswordReset } from "@/lib/auth-client";
+import { emailSchema } from "@/lib/validation/auth-schemas";
 
 const forgotPasswordSchema = z.object({
-  email: z.email("Enter a valid email address"),
+  email: emailSchema,
 });
 
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
