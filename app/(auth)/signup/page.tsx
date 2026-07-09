@@ -14,7 +14,12 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { LawnButton } from "@/components/landing/lawn-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { AuthError, signInWithGoogle, signUpWithMagicLink } from "@/lib/auth-client";
+import {
+  AuthError,
+  buildSetPasswordCallbackURL,
+  signInWithGoogle,
+  signUpWithMagicLink,
+} from "@/lib/auth-client";
 import { getWebmailUrl, slugifyUsername } from "@/lib/utils";
 import { emailSchema, nameSchema } from "@/lib/validation/auth-schemas";
 
@@ -62,7 +67,7 @@ export default function SignUpPage() {
         email: values.email,
         name: values.name,
         username,
-        callbackURL: `${window.location.origin}/set-password`,
+        callbackURL: buildSetPasswordCallbackURL(values.email, values.name, username),
       });
       setSent({ email: values.email, name: values.name, username });
       setSecondsLeft(RESEND_COOLDOWN_SECONDS);
@@ -89,7 +94,7 @@ export default function SignUpPage() {
         email: sent.email,
         name: sent.name,
         username: sent.username,
-        callbackURL: `${window.location.origin}/set-password`,
+        callbackURL: buildSetPasswordCallbackURL(sent.email, sent.name, sent.username),
       });
       setSecondsLeft(RESEND_COOLDOWN_SECONDS);
     } catch (error) {
