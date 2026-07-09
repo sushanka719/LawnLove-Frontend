@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
-const RESEND_COOLDOWN_SECONDS = 30;
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export function ExpiredLinkCard({
   email,
