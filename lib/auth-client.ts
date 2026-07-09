@@ -32,6 +32,22 @@ async function authRequest<T>(path: string, body: unknown): Promise<T> {
   return data as T;
 }
 
+// better-auth redirects here on success, and appends `?error=INVALID_TOKEN` to
+// this same URL if the magic link is expired/invalid/already used — so we
+// carry the signup details along as query params to allow resending from the
+// expired-link page without needing to look anything up server-side.
+export function buildSetPasswordCallbackURL(
+  email: string,
+  name: string,
+  username: string,
+) {
+  const url = new URL("/set-password", window.location.origin);
+  url.searchParams.set("email", email);
+  url.searchParams.set("name", name);
+  url.searchParams.set("username", username);
+  return url.toString();
+}
+
 export function signUpWithMagicLink(params: {
   email: string;
   name: string;
