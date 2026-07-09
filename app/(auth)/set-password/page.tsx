@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthTextField } from "@/components/auth/auth-text-field";
+import { ExpiredLinkCard } from "@/components/auth/expired-link-card";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { AuthError, setPassword } from "@/lib/auth-client";
@@ -25,8 +26,9 @@ const setPasswordSchema = z
 
 type SetPasswordValues = z.infer<typeof setPasswordSchema>;
 
-export default function SetPasswordPage() {
+function SetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formError, setFormError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const {
@@ -52,6 +54,16 @@ export default function SetPasswordPage() {
       );
     }
   };
+
+  if (searchParams.get("error") === "INVALID_TOKEN") {
+    return (
+      <ExpiredLinkCard
+        email={searchParams.get("email")}
+        name={searchParams.get("name")}
+        username={searchParams.get("username")}
+      />
+    );
+  }
 
   if (done) {
     return (
@@ -94,5 +106,13 @@ export default function SetPasswordPage() {
         </SubmitButton>
       </form>
     </AuthCard>
+  );
+}
+
+export default function SetPasswordPage() {
+  return (
+    <Suspense>
+      <SetPasswordForm />
+    </Suspense>
   );
 }
