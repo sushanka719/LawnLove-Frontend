@@ -18,7 +18,7 @@ import { AuthError, signInWithGoogle, signUpWithMagicLink } from "@/lib/auth-cli
 import { getWebmailUrl, slugifyUsername } from "@/lib/utils";
 import { emailSchema, nameSchema } from "@/lib/validation/auth-schemas";
 
-const RESEND_COOLDOWN_SECONDS = 30;
+const RESEND_COOLDOWN_SECONDS = 60;
 
 const signUpSchema = z.object({
   name: nameSchema,
@@ -41,10 +41,11 @@ export default function SignUpPage() {
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { name: "", email: "", rememberMe: false },
+    mode: "onChange",
   });
 
   useEffect(() => {
@@ -137,16 +138,14 @@ export default function SignUpPage() {
     <AuthCard
       title="Create your account"
       footer={
-        <>
-          I have read and agree to our{" "}
-          <Link href="/terms" className="underline">
-            Terms of Use
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="underline">
-            Privacy Policy.
-          </Link>
-        </>
+        <span className="flex items-start gap-2 text-left">
+          <label htmlFor="agree-to-terms" className="text-sm leading-normal">
+            By continuing, you agree to LawnLove{" "}
+            <Link href="/terms" className="underline">
+              Terms and Privacy
+            </Link>{" "}
+          </label>
+        </span>
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex w-full flex-col gap-4">
@@ -187,7 +186,10 @@ export default function SignUpPage() {
 
         {formError && <p className="text-destructive text-center text-sm">{formError}</p>}
 
-        <SubmitButton disabled={isSubmitting}>
+        <SubmitButton
+          disabled={isSubmitting || !isValid}
+          className="disabled:cursor-not-allowed disabled:bg-[#195134]/40 disabled:hover:bg-[#195134]/40"
+        >
           {isSubmitting ? "Signing up..." : "Sign up"}
         </SubmitButton>
       </form>
