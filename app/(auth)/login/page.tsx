@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -14,6 +15,7 @@ import { GoogleButton } from "@/components/auth/google-button";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { sessionQueryKey } from "@/hooks/use-session";
 import { AuthError, signInWithEmail, signInWithGoogle } from "@/lib/auth-client";
 import { emailSchema, loginPasswordSchema } from "@/lib/validation/auth-schemas";
 
@@ -27,6 +29,7 @@ type SignInValues = z.infer<typeof signInSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
@@ -42,7 +45,8 @@ export default function LoginPage() {
     setFormError(null);
     try {
       await signInWithEmail(values);
-      router.push("/");
+      await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
+      router.push("/dashboard");
     } catch (error) {
       setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
     }
@@ -51,7 +55,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setFormError(null);
     try {
-      await signInWithGoogle(`${window.location.origin}/`);
+      await signInWithGoogle(`${window.location.origin}/dashboard`);
     } catch (error) {
       setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
     }

@@ -90,6 +90,39 @@ export function resetPassword(params: { newPassword: string; token: string }) {
   return authRequest<{ status: boolean }>("/reset-password", params);
 }
 
+export type Session = {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    image?: string | null;
+  };
+  session: {
+    id: string;
+    expiresAt: string;
+  };
+};
+
+export async function getSession(): Promise<Session | null> {
+  const res = await fetch(`${AUTH_BASE_URL}/get-session`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const data = await res.json().catch(() => null);
+  return (data as Session | null) ?? null;
+}
+
+export async function signOut() {
+  await fetch(`${AUTH_BASE_URL}/sign-out`, {
+    method: "POST",
+    credentials: "include",
+  });
+}
+
 export async function setPassword(newPassword: string) {
   const res = await fetch(`${env.NEXT_PUBLIC_API_URL}/auth/set-password`, {
     method: "POST",
