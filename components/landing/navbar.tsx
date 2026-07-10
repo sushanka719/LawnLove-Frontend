@@ -3,9 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 
 import { LawnButton } from "@/components/landing/lawn-button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSession, useSignOut } from "@/hooks/use-session";
 
 const MENU_ITEMS = [
   { label: "Home", href: "#", active: true },
@@ -15,8 +24,57 @@ const MENU_ITEMS = [
   { label: "Contact", href: "#contact" },
 ];
 
+function getInitials(name?: string, email?: string) {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    return parts
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("");
+  }
+  return email?.[0]?.toUpperCase() ?? "?";
+}
+
+function ProfileMenu() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const signOut = useSignOut();
+  const user = session?.user;
+
+  if (!user) return null;
+
+  const handleSignOut = () => {
+    signOut.mutate(undefined, {
+      onSuccess: () => router.push("/"),
+    });
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="rounded-full outline-none">
+        <Avatar>
+          <AvatarImage src={user.image ?? undefined} alt={user.name} />
+          <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+          <LayoutDashboard />
+          Dashboard
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
+          <LogOut />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const { data: session, isPending } = useSession();
+  const isLoggedIn = !isPending && !!session?.user;
 
   return (
     <header className="bg-lawn-bg-2 sticky top-0 z-50 shadow-[4px_0px_16px_0px_rgba(119,119,119,0.25)]">
@@ -52,12 +110,16 @@ export function Navbar() {
           >
             Get a Quote
           </LawnButton>
-          <LawnButton
-            href="/login"
-            className="px-4 py-2.5 text-sm 2xl:px-8 2xl:py-3 2xl:text-base"
-          >
-            Log in / Sign up
-          </LawnButton>
+          {isLoggedIn ? (
+            <ProfileMenu />
+          ) : (
+            <LawnButton
+              href="/login"
+              className="px-4 py-2.5 text-sm 2xl:px-8 2xl:py-3 2xl:text-base"
+            >
+              Log in / Sign up
+            </LawnButton>
+          )}
         </div>
 
         <button
@@ -92,9 +154,15 @@ export function Navbar() {
             <LawnButton href="#quote" variant="outline" className="w-full">
               Get a Quote
             </LawnButton>
-            <LawnButton href="/login" className="w-full">
-              Log in / Sign up
-            </LawnButton>
+            {isLoggedIn ? (
+              <div className="flex items-center justify-center">
+                <ProfileMenu />
+              </div>
+            ) : (
+              <LawnButton href="/login" className="w-full">
+                Log in / Sign up
+              </LawnButton>
+            )}
           </div>
         </div>
       ) : null}
