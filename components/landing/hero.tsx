@@ -2,7 +2,6 @@ import Image from "next/image";
 import { Star, MapPin } from "lucide-react";
 
 import { SectionBadge } from "@/components/landing/section-badge";
-import { LawnButton } from "@/components/landing/lawn-button";
 import { Input } from "@/components/ui/input";
 
 const TESTIMONIALS = [
@@ -53,18 +52,25 @@ export function Hero() {
           </p>
         </div>
 
-        <form className="flex w-full flex-col items-stretch gap-4 sm:flex-row sm:items-start">
+        <form
+          action="/booking/address"
+          className="flex w-full flex-col items-stretch gap-4 sm:flex-row sm:items-start"
+        >
           <div className="border-input relative flex w-full items-center rounded-xl border-[1.2px] sm:w-[297px]">
             <MapPin className="text-lawn-text-secondary absolute left-4 size-5" />
             <Input
               type="text"
+              name="address"
               placeholder="Enter your home address"
               className="text-lawn-text-secondary h-auto border-0 py-3 pr-4 pl-11 text-base font-semibold"
             />
           </div>
-          <LawnButton href="#quote" className="w-full sm:w-auto">
+          <button
+            type="submit"
+            className="lawn-gradient-btn inline-flex w-full shrink-0 items-center justify-center rounded-xl px-8 py-3 text-base font-semibold tracking-tight whitespace-nowrap text-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.25)] transition-opacity hover:opacity-90 sm:w-auto"
+          >
             Get an Instant Quote
-          </LawnButton>
+          </button>
         </form>
       </div>
 
