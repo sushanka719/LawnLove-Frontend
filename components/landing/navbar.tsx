@@ -157,7 +157,7 @@ export function Navbar() {
 
         <div className="hidden shrink-0 items-center gap-2 xl:flex xl:gap-4">
           <LawnButton
-            href="#quote"
+            href="/booking/address"
             variant="outline"
             className="px-4 py-2.5 text-sm 2xl:px-8 2xl:py-3 2xl:text-base"
           >
@@ -220,7 +220,7 @@ export function Navbar() {
             </nav>
 
             <div className="flex flex-col items-stretch gap-3">
-              <LawnButton href="#quote" variant="outline" className="w-full">
+              <LawnButton href="/booking/address" variant="outline" className="w-full">
                 Get a Quote
               </LawnButton>
               {isLoggedIn ? (
