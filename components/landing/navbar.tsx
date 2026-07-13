@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu } from "lucide-react";
 
 import { LawnButton } from "@/components/landing/lawn-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
