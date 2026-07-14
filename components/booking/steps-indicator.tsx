@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Check } from "lucide-react";
 
 import { BOOKING_STEPS } from "@/lib/booking-steps";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ export function StepsIndicator() {
       {BOOKING_STEPS.map((step, index) => {
         const stepNumber = index + 1;
         const isActive = stepNumber === currentStep;
+        const isCompleted = stepNumber < currentStep;
         const isLast = index === BOOKING_STEPS.length - 1;
 
         return (
@@ -24,16 +26,24 @@ export function StepsIndicator() {
                 className={cn(
                   "bg-lawn-bg-1 flex size-10 shrink-0 items-center justify-center rounded-full",
                   isActive && "border-lawn-primary-light border",
+                  isCompleted &&
+                    "lawn-gradient-btn shadow-[0px_0px_4px_4px_rgba(43,180,109,0.4)]",
                 )}
               >
-                <span className="text-lawn-primary font-heading text-base font-semibold">
-                  {stepNumber}
-                </span>
+                {isCompleted ? (
+                  <Check className="size-5 text-white" />
+                ) : (
+                  <span className="text-lawn-primary font-heading text-base font-semibold">
+                    {stepNumber}
+                  </span>
+                )}
               </div>
               <span
                 className={cn(
                   "font-heading text-base font-semibold whitespace-nowrap",
-                  isActive ? "text-lawn-text-primary" : "text-lawn-text-tertiary",
+                  isActive || isCompleted
+                    ? "text-lawn-text-primary"
+                    : "text-lawn-text-tertiary",
                 )}
               >
                 {step.label}
