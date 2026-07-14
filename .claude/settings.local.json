@@ -8,7 +8,10 @@
       "Bash(mkdir -p public/landing)",
       "Bash(curl -sSL -o hero-person.png \"https://www.figma.com/api/mcp/asset/d2bc5908-b8dc-4b3e-9e23-6a71f0649b64\")",
       "Bash(node -e \"console.log\\(Object.keys\\(require\\('/home/next-evolvion/Desktop/LawnHate/LawnFrontend/node_modules/lucide-react'\\)\\).filter\\(k=>/Chevron|Plus|Minus|MapPin|Star|Quote|Github|Twitter|Linkedin/.test\\(k\\)\\).slice\\(0,30\\)\\)\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(gh pr *)",
+      "Read(//home/next-evolvion/Desktop/LawnHate/**)",
+      "Bash(node -e 'const re=/^\\(?=.*[a-z]\\)\\(?=.*[A-Z]\\)\\(?=.*\\\\d\\)\\(?=.*[^A-Za-z0-9]\\).+$/;[\"password\",\"password1\",\"12345678\",\"qwerty123\",\"letmein1\",\"welcome1\",\"admin123\",\"iloveyou1\"].forEach\\(p=>console.log\\(p.padEnd\\(12\\), re.test\\(p\\)?\"PASSES complexity \\(list would matter\\)\":\"already rejected by complexity\"\\)\\)')"
     ]
   }
 }
