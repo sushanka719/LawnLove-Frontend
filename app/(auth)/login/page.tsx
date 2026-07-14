@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
@@ -28,8 +28,18 @@ const signInSchema = z.object({
 
 type SignInValues = z.infer<typeof signInSchema>;
 
-export default function LoginPage() {
+// Only allow same-origin relative redirects to avoid open-redirect abuse.
+function safeNext(next: string | null): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    return next;
+  }
+  return "/dashboard";
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = safeNext(searchParams.get("next"));
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +58,7 @@ export default function LoginPage() {
     try {
       await signInWithEmail(values);
       await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
-      router.push("/dashboard");
+      router.push(redirectTo);
     } catch (error) {
       setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
     }
@@ -57,7 +67,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setFormError(null);
     try {
-      await signInWithGoogle(`${window.location.origin}/dashboard`);
+      await signInWithGoogle(`${window.location.origin}${redirectTo}`);
     } catch (error) {
       setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
     }
@@ -141,5 +151,13 @@ export default function LoginPage() {
 
       <GoogleButton onClick={handleGoogleSignIn} disabled={isSubmitting} />
     </AuthCard>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

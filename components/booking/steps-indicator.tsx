@@ -9,7 +9,14 @@ import { cn } from "@/lib/utils";
 export function StepsIndicator() {
   const pathname = usePathname();
   const activeIndex = BOOKING_STEPS.findIndex((step) => step.path === pathname);
-  const currentStep = activeIndex === -1 ? 1 : activeIndex + 1;
+
+  // Hide the step tracker on booking pages that aren't one of the flow steps
+  // (e.g. the confirmation page).
+  if (activeIndex === -1) {
+    return null;
+  }
+
+  const currentStep = activeIndex + 1;
 
   return (
     <ol className="flex w-full items-start justify-between gap-2 px-4 py-6 sm:px-6 lg:px-10 xl:px-16 2xl:px-[240px]">

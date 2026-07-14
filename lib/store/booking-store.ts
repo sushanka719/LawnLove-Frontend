@@ -29,11 +29,10 @@ export type ScheduleData = {
   timeSlot: string;
 };
 
+// Raw card data is never stored — it lives only inside Stripe Elements and is
+// exchanged for a payment method id at submit time. We keep only the user's
+// "save card" preference here.
 export type PaymentData = {
-  cardNumber: string;
-  expiry: string;
-  cvc: string;
-  zip: string;
   saveCard: boolean;
 };
 
@@ -56,7 +55,7 @@ const initialState = {
   property: { boundary: [], areaSqFt: 0, estimatedAreaSqFt: 0, totalPrice: 0 },
   pricing: { subtotal: 0, frequency: "", discountPct: 0, totalPerVisit: 0 },
   schedule: { date: "", timeSlot: "" },
-  payment: { cardNumber: "", expiry: "", cvc: "", zip: "", saveCard: false },
+  payment: { saveCard: false },
 } satisfies Omit<
   BookingState,
   "setAddress" | "setProperty" | "setPricing" | "setSchedule" | "setPayment" | "reset"
@@ -76,9 +75,9 @@ export const useBookingStore = create<BookingState>()(
     {
       name: "lawnhate-booking",
       storage: createJSONStorage(() => sessionStorage),
-      version: 2,
+      version: 3,
       migrate: (_persisted, version) =>
-        version === 2 ? (_persisted as BookingState) : initialState,
+        version === 3 ? (_persisted as BookingState) : initialState,
     },
   ),
 );
