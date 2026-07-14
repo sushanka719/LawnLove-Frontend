@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { MeasuredAreaCard } from "@/components/booking/measured-area-card";
 import { PropertyMap } from "@/components/booking/property-map";
 import { BOOKING_STEPS } from "@/lib/booking-steps";
 import { polygonAreaSqFt, type LatLng } from "@/lib/geo";
+import { geocodeAddress } from "@/lib/mapbox";
 import { computeBasePrice, ESTIMATED_AREA_FACTOR } from "@/lib/pricing";
 import { useBookingStore } from "@/lib/store/booking-store";
 
 export function PropertyForm() {
   const router = useRouter();
   const address = useBookingStore((state) => state.address);
+  const setAddress = useBookingStore((state) => state.setAddress);
   const storedProperty = useBookingStore((state) => state.property);
   const setProperty = useBookingStore((state) => state.setProperty);
 
@@ -22,10 +24,36 @@ export function PropertyForm() {
   const estimatedAreaSqFt = Math.round(areaSqFt * ESTIMATED_AREA_FACTOR);
   const totalPrice = computeBasePrice(estimatedAreaSqFt);
 
-  const center =
+  // Coordinates are only captured on the address step when the user picks a
+  // geocode suggestion. If they typed the address manually (or arrived from the
+  // landing hero search), lat/lng are null — so geocode the address here to
+  // center and zoom the map onto their property, and persist the result so the
+  // rest of the flow has real coordinates.
+  const [center, setCenter] = useState<LatLng | null>(
     address.lat != null && address.lng != null
       ? { lat: address.lat, lng: address.lng }
-      : null;
+      : null,
+  );
+
+  useEffect(() => {
+    if (center || !address.address.trim()) {
+      return;
+    }
+
+    let active = true;
+    geocodeAddress(address.address).then((results) => {
+      if (!active || results.length === 0) {
+        return;
+      }
+      const { lat, lng } = results[0];
+      setCenter({ lat, lng });
+      setAddress({ ...address, lat, lng });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [center, address, setAddress]);
 
   const handleAddPoint = (point: LatLng) => setPoints((prev) => [...prev, point]);
   const handleMovePoint = (index: number, point: LatLng) =>
