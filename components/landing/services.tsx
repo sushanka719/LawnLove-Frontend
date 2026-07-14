@@ -23,6 +23,7 @@ export function Services() {
             src="/landing/service-photo-1.jpg"
             alt="Precision lawn edging"
             fill
+            sizes="(min-width: 1536px) 200px, (min-width: 1024px) 100px, (min-width: 640px) 130px, 40vw"
             className="object-cover"
           />
         </div>
@@ -31,6 +32,7 @@ export function Services() {
             src="/landing/service-photo-2.jpg"
             alt="Lawn mower on freshly cut lawn"
             fill
+            sizes="(min-width: 1536px) 350px, (min-width: 1024px) 160px, (min-width: 640px) 230px, 60vw"
             className="object-cover"
           />
         </div>
