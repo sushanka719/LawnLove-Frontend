@@ -1,26 +1,22 @@
 import {
-  DashboardSearch,
   NewBookingButton,
   NotificationBell,
 } from "@/components/dashboard/dashboard-actions";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
-import { StatCards } from "@/components/dashboard/stat-cards";
 import { PastVisitSection, UpcomingSection } from "@/components/dashboard/visit-list";
 
-export default function DashboardPage() {
+export default function BookingsPage() {
   return (
     <DashboardPanel
-      title="Welcome Back!"
+      title="Bookings"
       subtitle="Track upcoming visits and review past services."
       actions={
         <>
-          <DashboardSearch />
           <NotificationBell />
           <NewBookingButton />
         </>
       }
     >
-      <StatCards />
       <UpcomingSection />
       <PastVisitSection />
     </DashboardPanel>
