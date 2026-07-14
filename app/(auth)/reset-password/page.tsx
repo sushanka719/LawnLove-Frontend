@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 
 import { AuthCard } from "@/components/auth/auth-card";
@@ -31,6 +32,8 @@ function ResetPasswordForm() {
   const token = searchParams.get("token");
   const [formError, setFormError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -70,21 +73,53 @@ function ResetPasswordForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="flex w-full flex-col gap-4">
         <FieldGroup className="gap-3.5">
           <Field>
-            <AuthTextField
-              type="password"
-              placeholder="New password"
-              {...register("newPassword")}
-              aria-invalid={!!errors.newPassword}
-            />
+            <div className="relative">
+              <AuthTextField
+                type={showNewPassword ? "text" : "password"}
+                placeholder="New password"
+                className="pr-10"
+                {...register("newPassword")}
+                aria-invalid={!!errors.newPassword}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((prev) => !prev)}
+                className="text-lawn-text-secondary hover:text-lawn-text-primary absolute top-1/2 right-3 -translate-y-1/2"
+                tabIndex={-1}
+                aria-label={showNewPassword ? "Hide password" : "Show password"}
+              >
+                {showNewPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
             <FieldError>{errors.newPassword?.message}</FieldError>
           </Field>
           <Field>
-            <AuthTextField
-              type="password"
-              placeholder="Confirm password"
-              {...register("confirmPassword")}
-              aria-invalid={!!errors.confirmPassword}
-            />
+            <div className="relative">
+              <AuthTextField
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm password"
+                className="pr-10"
+                {...register("confirmPassword")}
+                aria-invalid={!!errors.confirmPassword}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="text-lawn-text-secondary hover:text-lawn-text-primary absolute top-1/2 right-3 -translate-y-1/2"
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
             <FieldError>{errors.confirmPassword?.message}</FieldError>
           </Field>
         </FieldGroup>
