@@ -20,7 +20,7 @@ export function Hero() {
   return (
     <section
       id="home"
-      className="bg-lawn-bg-2 relative flex scroll-mt-25 flex-col items-center overflow-hidden px-4 py-16 sm:px-6 sm:py-20 lg:min-h-screen lg:flex-row lg:gap-10 lg:px-10 lg:py-20 xl:gap-16 xl:px-16 xl:py-24 2xl:px-[240px] 2xl:py-[125px]"
+      className="bg-lawn-bg-2 relative flex scroll-mt-25 flex-col items-center overflow-hidden px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[90vh] lg:flex-row lg:gap-10 lg:px-10 lg:py-20 xl:gap-16 xl:px-16 xl:py-24 2xl:px-[240px] 2xl:py-[125px]"
     >
       <div className="absolute inset-0 lg:hidden">
         <Image
