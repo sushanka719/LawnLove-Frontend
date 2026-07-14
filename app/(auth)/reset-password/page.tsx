@@ -10,7 +10,8 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { AuthTextField } from "@/components/auth/auth-text-field";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
-import { AuthError, resetPassword } from "@/lib/auth-client";
+import { resetPassword } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/http";
 import { newPasswordSchema } from "@/lib/validation/auth-schemas";
 
 const resetPasswordSchema = z
@@ -51,7 +52,7 @@ function ResetPasswordForm() {
       setDone(true);
       setTimeout(() => router.push("/login"), 1500);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 
