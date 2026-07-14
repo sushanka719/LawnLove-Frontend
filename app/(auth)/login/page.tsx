@@ -16,7 +16,8 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { sessionQueryKey } from "@/hooks/use-session";
-import { AuthError, signInWithEmail, signInWithGoogle } from "@/lib/auth-client";
+import { signInWithEmail, signInWithGoogle } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/http";
 import { emailSchema, loginPasswordSchema } from "@/lib/validation/auth-schemas";
 
 const signInSchema = z.object({
@@ -58,7 +59,7 @@ function LoginForm() {
       await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
       router.push(redirectTo);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 
@@ -67,7 +68,7 @@ function LoginForm() {
     try {
       await signInWithGoogle(`${window.location.origin}${redirectTo}`);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 

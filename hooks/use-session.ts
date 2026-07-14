@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getSession, signOut } from "@/lib/auth-client";
+import { getSession, signOut } from "@/lib/api/auth";
 
 export const sessionQueryKey = ["session"] as const;
 

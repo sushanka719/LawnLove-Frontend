@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/hooks/use-session";
 import { useCreateBooking, useSetupIntent } from "@/hooks/use-booking";
-import { BookingApiError } from "@/lib/api/booking";
+import { ApiError } from "@/lib/api/http";
 import { FREQUENCY_LABELS, type Frequency } from "@/lib/pricing";
 import { getStripe, STRIPE_PUBLISHABLE_KEY } from "@/lib/stripe";
 import { useBookingStore } from "@/lib/store/booking-store";
@@ -143,7 +143,7 @@ function PaymentFormBody() {
       router.push("/booking/confirmed");
     } catch (err) {
       const message =
-        err instanceof BookingApiError
+        err instanceof ApiError
           ? err.message
           : "We couldn't complete your booking. Please try again.";
       toast.error(message);

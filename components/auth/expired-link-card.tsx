@@ -5,11 +5,8 @@ import Link from "next/link";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
-import {
-  AuthError,
-  buildSetPasswordCallbackURL,
-  signUpWithMagicLink,
-} from "@/lib/auth-client";
+import { buildSetPasswordCallbackURL, signUpWithMagicLink } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/http";
 import { cn } from "@/lib/utils";
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -49,9 +46,7 @@ export function ExpiredLinkCard({
       setResent(true);
       setSecondsLeft(RESEND_COOLDOWN_SECONDS);
     } catch (error) {
-      setResendError(
-        error instanceof AuthError ? error.message : "Something went wrong.",
-      );
+      setResendError(error instanceof ApiError ? error.message : "Something went wrong.");
     } finally {
       setIsResending(false);
     }
