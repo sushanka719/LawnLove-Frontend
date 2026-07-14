@@ -13,6 +13,7 @@ export function Cta() {
           src="/landing/cta-background.png"
           alt="Freshly mowed backyard lawn"
           fill
+          sizes="100vw"
           className="object-cover object-bottom"
         />
         <div className="absolute inset-0 bg-black/20" />

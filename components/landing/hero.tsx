@@ -1,8 +1,7 @@
 import Image from "next/image";
-import { Star, MapPin } from "lucide-react";
+import { Star } from "lucide-react";
 
-import { SectionBadge } from "@/components/landing/section-badge";
-import { Input } from "@/components/ui/input";
+import { HeroAddressSearch } from "@/components/landing/hero-address-search";
 
 const TESTIMONIALS = [
   {
@@ -29,6 +28,7 @@ export function Hero() {
           alt=""
           fill
           priority
+          sizes="100vw"
           aria-hidden
           className="scale-110 object-cover object-top blur-md"
         />
@@ -52,26 +52,7 @@ export function Hero() {
           </p>
         </div>
 
-        <form
-          action="/booking/address"
-          className="flex w-full flex-col items-stretch gap-4 sm:flex-row sm:items-start"
-        >
-          <div className="border-input relative flex w-full items-center rounded-xl border-[1.2px] sm:w-[297px]">
-            <MapPin className="text-lawn-text-secondary absolute left-4 size-5" />
-            <Input
-              type="text"
-              name="address"
-              placeholder="Enter your home address"
-              className="text-lawn-text-secondary h-auto border-0 py-3 pr-4 pl-11 text-base font-semibold"
-            />
-          </div>
-          <button
-            type="submit"
-            className="lawn-gradient-btn inline-flex w-full shrink-0 items-center justify-center rounded-xl px-8 py-3 text-base font-semibold tracking-tight whitespace-nowrap text-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.25)] transition-opacity hover:opacity-90 sm:w-auto"
-          >
-            Get an Instant Quote
-          </button>
-        </form>
+        <HeroAddressSearch />
       </div>
 
       <div className="relative hidden aspect-[762/546] w-full min-w-0 shrink-0 lg:block lg:max-w-[400px] lg:flex-1 xl:max-w-[560px] 2xl:max-w-[762px] 2xl:flex-none">
@@ -80,6 +61,7 @@ export function Hero() {
           alt="Lawn care professional"
           fill
           priority
+          sizes="(min-width: 1536px) 762px, (min-width: 1280px) 560px, (min-width: 1024px) 400px, 100vw"
           className="rounded-3xl object-cover object-top"
         />
 
