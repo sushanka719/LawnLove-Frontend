@@ -65,6 +65,7 @@ export function BeforeAfter() {
               src="/landing/after-photo.jpg"
               alt="After professional lawn care"
               fill
+              sizes="(min-width: 1536px) 1440px, 100vw"
               className="object-cover"
               draggable={false}
             />
@@ -82,6 +83,7 @@ export function BeforeAfter() {
               src="/landing/before-photo.jpg"
               alt="Before professional lawn care"
               fill
+              sizes="(min-width: 1536px) 1440px, 100vw"
               className="object-cover"
               draggable={false}
             />
