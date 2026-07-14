@@ -118,19 +118,25 @@ export function DashboardSidebar() {
 
       {/* User card */}
       <div className="mx-5 mt-4 mb-6 flex items-center gap-2.5 rounded-[10px] p-3 shadow-[0px_0px_16px_2px_rgba(25,81,52,0.1)]">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#fecd03] text-[19px] font-medium text-white uppercase">
-          {getInitials(user?.name, user?.email)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-lawn-text-primary truncate text-base font-semibold tracking-tight">
-            {displayName}
-          </p>
-          {user?.email && (
-            <p className="text-lawn-text-tertiary truncate text-base font-medium tracking-tight">
-              {user.email}
+        <Link
+          href="/dashboard/profile"
+          aria-label="View profile"
+          className="flex min-w-0 flex-1 items-center gap-2.5"
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#fecd03] text-[19px] font-medium text-white uppercase">
+            {getInitials(user?.name, user?.email)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-lawn-text-primary truncate text-base font-semibold tracking-tight">
+              {displayName}
             </p>
-          )}
-        </div>
+            {user?.email && (
+              <p className="text-lawn-text-tertiary truncate text-base font-medium tracking-tight">
+                {user.email}
+              </p>
+            )}
+          </div>
+        </Link>
         <button
           type="button"
           onClick={handleSignOut}
