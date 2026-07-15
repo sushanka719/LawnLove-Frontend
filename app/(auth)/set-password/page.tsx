@@ -12,6 +12,7 @@ import { ExpiredLinkCard } from "@/components/auth/expired-link-card";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { setPassword } from "@/lib/api/auth";
+import { broadcastAuthSignal } from "@/lib/auth-channel";
 import { ApiError } from "@/lib/api/http";
 import { newPasswordSchema } from "@/lib/validation/auth-schemas";
 
@@ -45,6 +46,9 @@ function SetPasswordForm() {
     setFormError(null);
     try {
       await setPassword(values.newPassword);
+      // Signup often starts in another tab (the "check your email" screen); tell
+      // it we're signed in now so it can leave that stale screen for the dashboard.
+      broadcastAuthSignal("signed-in");
       setDone(true);
       setTimeout(() => router.push("/login"), 1500);
     } catch (error) {

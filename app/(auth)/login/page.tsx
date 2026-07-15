@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { sessionQueryKey } from "@/hooks/use-session";
 import { signInWithEmail, signInWithGoogle } from "@/lib/api/auth";
+import { broadcastAuthSignal } from "@/lib/auth-channel";
 import { ApiError } from "@/lib/api/http";
 import { emailSchema, loginPasswordSchema } from "@/lib/validation/auth-schemas";
 
@@ -57,6 +58,8 @@ function LoginForm() {
     try {
       await signInWithEmail(values);
       await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
+      // Let any other tab still parked on a pre-auth screen follow us in.
+      broadcastAuthSignal("signed-in");
       router.push(redirectTo);
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
