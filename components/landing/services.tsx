@@ -15,7 +15,7 @@ export function Services() {
   return (
     <section
       id="services"
-      className="bg-lawn-bg-1 flex scroll-mt-5 flex-col items-center justify-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:min-h-screen lg:flex-row lg:gap-10 lg:px-10 lg:py-24 xl:gap-16 xl:px-16 2xl:gap-[172px] 2xl:px-[240px] 2xl:py-32"
+      className="bg-lawn-bg-1 flex scroll-mt-5 flex-col items-center justify-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:flex-row lg:gap-10 lg:px-10 lg:py-24 xl:gap-14 xl:px-16 2xl:gap-20 2xl:px-[240px] 2xl:py-32"
     >
       <div className="grid w-full max-w-[400px] shrink-0 grid-cols-[minmax(0,1fr)_minmax(0,1.75fr)] items-start gap-3 sm:gap-5 lg:w-[260px] lg:max-w-none xl:w-[420px] 2xl:w-auto 2xl:grid-cols-[200px_350px]">
         <div className="relative aspect-[200/350] w-full overflow-hidden rounded-[20px] shadow-[0px_8px_24px_0px_rgba(58,53,65,0.2)] 2xl:h-[350px] 2xl:w-[200px]">

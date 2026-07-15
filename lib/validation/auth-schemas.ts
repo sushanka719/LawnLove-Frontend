@@ -12,7 +12,7 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
 const NAME_MESSAGE = "Name must contain only letters and spaces (2-100 characters).";
 const EMAIL_MESSAGE = "Please enter a valid email address.";
 const PASSWORD_MESSAGE =
-  "Password must be 8-64 characters with uppercase, lowercase, number and special character.";
+  "Password must be 8-16 characters with uppercase, lowercase, number and special character.";
 
 export const nameSchema = z
   .string()
@@ -33,5 +33,5 @@ export const loginPasswordSchema = z.string().min(1, "Password is required.");
 export const newPasswordSchema = z
   .string()
   .trim()
-  .refine((value) => value.length >= 8 && value.length <= 64, PASSWORD_MESSAGE)
+  .refine((value) => value.length >= 8 && value.length <= 16, PASSWORD_MESSAGE)
   .refine((value) => PASSWORD_REGEX.test(value), PASSWORD_MESSAGE);
