@@ -1,37 +1,5 @@
-import { env } from "@/config/env";
+import { http } from "@/lib/api/http";
 import type { Frequency } from "@/lib/pricing";
-
-export class BookingApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-  ) {
-    super(message);
-    this.name = "BookingApiError";
-  }
-}
-
-// Booking endpoints are session-protected, so every request must carry the
-// better-auth cookie — the shared apiClient doesn't set credentials by default.
-async function bookingRequest<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${env.NEXT_PUBLIC_API_URL}${path}`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-
-  const data = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    const message =
-      (data as { message?: string } | null)?.message ??
-      "Something went wrong. Please try again.";
-    throw new BookingApiError(message, res.status);
-  }
-
-  return data as T;
-}
 
 export type SetupIntentResponse = {
   clientSecret: string;
@@ -39,7 +7,7 @@ export type SetupIntentResponse = {
 };
 
 export function createSetupIntent() {
-  return bookingRequest<SetupIntentResponse>("/bookings/setup-intent");
+  return http.post<SetupIntentResponse>("/bookings/setup-intent");
 }
 
 export type CreateBookingPayload = {
@@ -67,5 +35,5 @@ export type CreateBookingResponse = {
 };
 
 export function createBooking(payload: CreateBookingPayload) {
-  return bookingRequest<CreateBookingResponse>("/bookings", payload);
+  return http.post<CreateBookingResponse>("/bookings", payload);
 }

@@ -11,7 +11,8 @@ import { AuthTextField } from "@/components/auth/auth-text-field";
 import { ExpiredLinkCard } from "@/components/auth/expired-link-card";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
-import { AuthError, setPassword } from "@/lib/auth-client";
+import { setPassword } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/http";
 import { newPasswordSchema } from "@/lib/validation/auth-schemas";
 
 const setPasswordSchema = z
@@ -48,7 +49,7 @@ function SetPasswordForm() {
       setTimeout(() => router.push("/login"), 1500);
     } catch (error) {
       setFormError(
-        error instanceof AuthError
+        error instanceof ApiError
           ? error.message
           : "Could not set your password. Please sign in again to retry.",
       );

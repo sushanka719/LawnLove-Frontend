@@ -10,7 +10,8 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { AuthTextField } from "@/components/auth/auth-text-field";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError } from "@/components/ui/field";
-import { AuthError, requestPasswordReset } from "@/lib/auth-client";
+import { requestPasswordReset } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/http";
 import { emailSchema } from "@/lib/validation/auth-schemas";
 
 const forgotPasswordSchema = z.object({
@@ -40,7 +41,7 @@ export default function ForgotPasswordPage() {
       });
       setSentTo(values.email);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 
