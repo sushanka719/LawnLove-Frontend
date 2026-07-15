@@ -43,6 +43,11 @@ function LoginForm() {
   const redirectTo = safeNext(searchParams.get("next"));
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
+  // `router.push` returns immediately, so `isSubmitting` alone would clear the
+  // loading state before the dashboard finishes loading — leaving the button
+  // clickable again. Hold `redirecting` from the push until this component
+  // unmounts on navigation so the button stays disabled through the redirect.
+  const [redirecting, setRedirecting] = useState(false);
   const {
     register,
     handleSubmit,
@@ -53,6 +58,8 @@ function LoginForm() {
     defaultValues: { email: "", password: "", rememberMe: false },
   });
 
+  const isBusy = isSubmitting || redirecting;
+
   const onSubmit = async (values: SignInValues) => {
     setFormError(null);
     try {
@@ -60,6 +67,7 @@ function LoginForm() {
       await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
       // Let any other tab still parked on a pre-auth screen follow us in.
       broadcastAuthSignal("signed-in");
+      setRedirecting(true);
       router.push(redirectTo);
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
@@ -121,8 +129,8 @@ function LoginForm() {
 
         {formError && <p className="text-destructive text-center text-sm">{formError}</p>}
 
-        <SubmitButton disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign in"}
+        <SubmitButton disabled={isBusy}>
+          {isBusy ? "Signing in..." : "Sign in"}
         </SubmitButton>
       </form>
 
@@ -135,7 +143,7 @@ function LoginForm() {
 
       <AuthDivider />
 
-      <GoogleButton onClick={handleGoogleSignIn} disabled={isSubmitting} />
+      <GoogleButton onClick={handleGoogleSignIn} disabled={isBusy} />
     </AuthCard>
   );
 }
