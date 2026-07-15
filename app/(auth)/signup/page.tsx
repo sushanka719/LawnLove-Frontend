@@ -14,12 +14,13 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { LawnButton } from "@/components/landing/lawn-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { useRedirectToDashboardOnSignIn } from "@/hooks/use-redirect-on-sign-in";
 import {
-  AuthError,
   buildSetPasswordCallbackURL,
   signInWithGoogle,
   signUpWithMagicLink,
-} from "@/lib/auth-client";
+} from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/http";
 import { getWebmailUrl, slugifyUsername } from "@/lib/utils";
 import { emailSchema, nameSchema } from "@/lib/validation/auth-schemas";
 
@@ -59,6 +60,12 @@ export default function SignUpPage() {
     return () => clearInterval(timer);
   }, [sent, secondsLeft]);
 
+  // Once the verification email is sent, this tab is waiting on the user to
+  // verify + sign in from the tab the email link opens. When that happens, move
+  // this tab to the dashboard instead of leaving it on the stale "check your
+  // email" screen.
+  useRedirectToDashboardOnSignIn(!!sent);
+
   const onSubmit = async (values: SignUpValues) => {
     setFormError(null);
     try {
@@ -72,7 +79,7 @@ export default function SignUpPage() {
       setSent({ email: values.email, name: values.name, username });
       setSecondsLeft(RESEND_COOLDOWN_SECONDS);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 
@@ -81,7 +88,7 @@ export default function SignUpPage() {
     try {
       await signInWithGoogle(`${window.location.origin}/`);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 
@@ -98,7 +105,7 @@ export default function SignUpPage() {
       });
       setSecondsLeft(RESEND_COOLDOWN_SECONDS);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     } finally {
       setIsResending(false);
     }

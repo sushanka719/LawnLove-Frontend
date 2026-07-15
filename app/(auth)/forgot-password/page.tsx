@@ -11,7 +11,8 @@ import { AuthTextField } from "@/components/auth/auth-text-field";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError } from "@/components/ui/field";
-import { AuthError, requestPasswordReset } from "@/lib/auth-client";
+import { buildResetPasswordCallbackURL, requestPasswordReset } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/http";
 import { emailSchema } from "@/lib/validation/auth-schemas";
 
 const forgotPasswordSchema = z.object({
@@ -48,7 +49,7 @@ export default function ForgotPasswordPage() {
   const sendResetLink = async (email: string) => {
     await requestPasswordReset({
       email,
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: buildResetPasswordCallbackURL(email),
     });
   };
 
@@ -59,7 +60,7 @@ export default function ForgotPasswordPage() {
       setSentTo(values.email);
       setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 
@@ -72,7 +73,7 @@ export default function ForgotPasswordPage() {
       await sendResetLink(email);
       setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     } finally {
       setIsResending(false);
     }

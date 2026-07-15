@@ -5,25 +5,33 @@ import Link from "next/link";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
-import {
-  AuthError,
-  buildSetPasswordCallbackURL,
-  signUpWithMagicLink,
-} from "@/lib/auth-client";
+import { ApiError } from "@/lib/api/http";
 import { cn } from "@/lib/utils";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
+// Shared expired-link screen for the email flows that land back here with
+// `?error=INVALID_TOKEN` (signup magic link → /set-password, password reset →
+// /reset-password). Each flow supplies its own copy, resend action, and the
+// destination for the "back" button; the cooldown/resend/error state machine
+// lives here so both stay in sync.
 export function ExpiredLinkCard({
+  title,
+  description,
   email,
-  name,
-  username,
+  canResend,
+  onResend,
+  backHref,
+  backLabel,
 }: {
+  title: string;
+  description: string;
   email: string | null;
-  name: string | null;
-  username: string | null;
+  canResend: boolean;
+  onResend: () => Promise<unknown>;
+  backHref: string;
+  backLabel: string;
 }) {
-  const canResend = !!email && !!name && !!username;
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [isResending, setIsResending] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
@@ -40,29 +48,19 @@ export function ExpiredLinkCard({
     setIsResending(true);
     setResendError(null);
     try {
-      await signUpWithMagicLink({
-        email: email!,
-        name: name!,
-        username: username!,
-        callbackURL: buildSetPasswordCallbackURL(email!, name!, username!),
-      });
+      await onResend();
       setResent(true);
       setSecondsLeft(RESEND_COOLDOWN_SECONDS);
     } catch (error) {
-      setResendError(
-        error instanceof AuthError ? error.message : "Something went wrong.",
-      );
+      setResendError(error instanceof ApiError ? error.message : "Something went wrong.");
     } finally {
       setIsResending(false);
     }
   };
 
   return (
-    <AuthCard title="Verification Link Expired">
-      <p className="text-lawn-text-secondary text-center text-base">
-        Your verification link has expired. Request a new link to continue creating your
-        account.
-      </p>
+    <AuthCard title={title}>
+      <p className="text-lawn-text-secondary text-center text-base">{description}</p>
 
       {resent && (
         <p className="text-lawn-text-primary text-center text-sm">
@@ -91,10 +89,10 @@ export function ExpiredLinkCard({
               : "Resend Link"}
         </Button>
         <Button
-          render={<Link href="/signup" />}
+          render={<Link href={backHref} />}
           className="lawn-gradient-btn h-auto flex-1 rounded-xl px-8 py-3 text-base font-semibold text-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.25)] hover:opacity-90"
         >
-          Back to Sign Up
+          {backLabel}
         </Button>
       </div>
     </AuthCard>

@@ -17,7 +17,9 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { sessionQueryKey } from "@/hooks/use-session";
-import { AuthError, signInWithEmail, signInWithGoogle } from "@/lib/auth-client";
+import { signInWithEmail, signInWithGoogle } from "@/lib/api/auth";
+import { broadcastAuthSignal } from "@/lib/auth-channel";
+import { ApiError } from "@/lib/api/http";
 import { emailSchema, loginPasswordSchema } from "@/lib/validation/auth-schemas";
 
 const signInSchema = z.object({
@@ -42,6 +44,11 @@ function LoginForm() {
   const redirectTo = safeNext(searchParams.get("next"));
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
+  // `router.push` returns immediately, so `isSubmitting` alone would clear the
+  // loading state before the dashboard finishes loading — leaving the button
+  // clickable again. Hold `redirecting` from the push until this component
+  // unmounts on navigation so the button stays disabled through the redirect.
+  const [redirecting, setRedirecting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -53,14 +60,19 @@ function LoginForm() {
     defaultValues: { email: "", password: "", rememberMe: false },
   });
 
+  const isBusy = isSubmitting || redirecting;
+
   const onSubmit = async (values: SignInValues) => {
     setFormError(null);
     try {
       await signInWithEmail(values);
       await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
+      // Let any other tab still parked on a pre-auth screen follow us in.
+      broadcastAuthSignal("signed-in");
+      setRedirecting(true);
       router.push(redirectTo);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 
@@ -69,7 +81,7 @@ function LoginForm() {
     try {
       await signInWithGoogle(`${window.location.origin}${redirectTo}`);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
 
@@ -135,8 +147,8 @@ function LoginForm() {
 
         {formError && <p className="text-destructive text-center text-sm">{formError}</p>}
 
-        <SubmitButton disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign in"}
+        <SubmitButton disabled={isBusy}>
+          {isBusy ? "Signing in..." : "Sign in"}
         </SubmitButton>
       </form>
 
@@ -149,7 +161,7 @@ function LoginForm() {
 
       <AuthDivider />
 
-      <GoogleButton onClick={handleGoogleSignIn} disabled={isSubmitting} />
+      <GoogleButton onClick={handleGoogleSignIn} disabled={isBusy} />
     </AuthCard>
   );
 }
