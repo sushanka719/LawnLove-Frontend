@@ -78,6 +78,8 @@ export type Session = {
     email: string;
     name: string;
     image?: string | null;
+    // Provided by the better-auth `admin` plugin. "user" | "agent" | "admin".
+    role?: string | null;
   };
   session: {
     id: string;

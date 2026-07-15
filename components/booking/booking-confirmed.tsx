@@ -63,8 +63,8 @@ export function BookingConfirmed() {
             You&apos;re all booked!
           </h1>
           <p className="text-lawn-text-secondary text-lg leading-7 font-medium">
-            Your booking has been confirmed. We&apos;ve sent a confirmation to your email
-            with all the details.
+            Your booking is confirmed and your card is saved. You&apos;re only charged
+            once the work is done — we&apos;ll email a receipt after each completed visit.
           </p>
         </div>
 
@@ -85,7 +85,11 @@ export function BookingConfirmed() {
               Back to dashboard
             </Link>
             <Link
-              href="/dashboard"
+              href={
+                confirmation?.rawId
+                  ? `/dashboard/bookings/${confirmation.rawId}`
+                  : "/dashboard/bookings"
+              }
               className="lawn-gradient-btn flex-1 rounded-xl px-8 py-3 text-center text-base font-semibold text-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.25)] hover:opacity-90"
             >
               View booking
