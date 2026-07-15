@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -36,15 +37,22 @@ function SetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formError, setFormError] = useState<string | null>(null);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [done, setDone] = useState(false);
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SetPasswordValues>({
     resolver: zodResolver(setPasswordSchema),
     defaultValues: { newPassword: "", confirmPassword: "" },
   });
+
+  const newPassword = watch("newPassword");
+  const confirmPassword = watch("confirmPassword");
+  const isFormFilled = Boolean(newPassword) && Boolean(confirmPassword);
 
   const onSubmit = async (values: SetPasswordValues) => {
     setFormError(null);
@@ -103,28 +111,64 @@ function SetPasswordForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="flex w-full flex-col gap-4">
         <FieldGroup className="gap-3.5">
           <Field>
-            <AuthTextField
-              type="password"
-              placeholder="New password"
-              {...register("newPassword")}
-              aria-invalid={!!errors.newPassword}
-            />
+            <div className="relative">
+              <AuthTextField
+                type={showNewPassword ? "text" : "password"}
+                placeholder="New password"
+                maxLength={16}
+                {...register("newPassword")}
+                aria-invalid={!!errors.newPassword}
+                className="pr-10"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((prev) => !prev)}
+                className="text-lawn-text-secondary hover:text-lawn-text-primary absolute top-1/2 right-3 -translate-y-1/2"
+                tabIndex={-1}
+                aria-label={showNewPassword ? "Hide password" : "Show password"}
+              >
+                {showNewPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
             <FieldError>{errors.newPassword?.message}</FieldError>
           </Field>
           <Field>
-            <AuthTextField
-              type="password"
-              placeholder="Confirm password"
-              {...register("confirmPassword")}
-              aria-invalid={!!errors.confirmPassword}
-            />
+            <div className="relative">
+              <AuthTextField
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm password"
+                maxLength={16}
+                {...register("confirmPassword")}
+                aria-invalid={!!errors.confirmPassword}
+                className="pr-10"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="text-lawn-text-secondary hover:text-lawn-text-primary absolute top-1/2 right-3 -translate-y-1/2"
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
             <FieldError>{errors.confirmPassword?.message}</FieldError>
           </Field>
         </FieldGroup>
 
         {formError && <p className="text-destructive text-center text-sm">{formError}</p>}
 
-        <SubmitButton disabled={isSubmitting}>
+        <SubmitButton disabled={isSubmitting || !isFormFilled}>
           {isSubmitting ? "Saving..." : "Set password"}
         </SubmitButton>
       </form>

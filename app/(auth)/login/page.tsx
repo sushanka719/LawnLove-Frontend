@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
+import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 
 import { AuthCard } from "@/components/auth/auth-card";
@@ -48,6 +49,7 @@ function LoginForm() {
   // clickable again. Hold `redirecting` from the push until this component
   // unmounts on navigation so the button stays disabled through the redirect.
   const [redirecting, setRedirecting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -97,12 +99,28 @@ function LoginForm() {
             <FieldError>{errors.email?.message}</FieldError>
           </Field>
           <Field>
-            <AuthTextField
-              type="password"
-              placeholder="Password"
-              {...register("password")}
-              aria-invalid={!!errors.password}
-            />
+            <div className="relative">
+              <AuthTextField
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                className="pr-10"
+                {...register("password")}
+                aria-invalid={!!errors.password}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="text-lawn-text-secondary hover:text-lawn-text-primary absolute top-1/2 right-3 -translate-y-1/2"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
             <FieldError>{errors.password?.message}</FieldError>
           </Field>
         </FieldGroup>
