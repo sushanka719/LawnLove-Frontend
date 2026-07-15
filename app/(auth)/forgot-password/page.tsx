@@ -9,6 +9,7 @@ import { z } from "zod";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthTextField } from "@/components/auth/auth-text-field";
 import { SubmitButton } from "@/components/auth/submit-button";
+import { Button } from "@/components/ui/button";
 import { Field, FieldError } from "@/components/ui/field";
 import { AuthError, requestPasswordReset } from "@/lib/auth-client";
 import { emailSchema } from "@/lib/validation/auth-schemas";
@@ -85,9 +86,12 @@ export default function ForgotPasswordPage() {
           create a new one.
         </p>
 
-        <Link href="/login" className="flex justify-center">
-          <SubmitButton>Back to Sign in</SubmitButton>
-        </Link>
+        <Button
+          render={<Link href="/login" />}
+          className="lawn-gradient-btn h-auto w-full rounded-xl px-8 py-3 text-base font-semibold text-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.25)] hover:opacity-90"
+        >
+          Back to Sign in
+        </Button>
 
         <p className="text-lawn-text-secondary text-center text-sm">
           Not received yet? <br />
