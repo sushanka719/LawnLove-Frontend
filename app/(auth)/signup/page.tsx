@@ -14,6 +14,7 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { LawnButton } from "@/components/landing/lawn-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { useRedirectToDashboardOnSignIn } from "@/hooks/use-redirect-on-sign-in";
 import {
   buildSetPasswordCallbackURL,
   signInWithGoogle,
@@ -58,6 +59,12 @@ export default function SignUpPage() {
     const timer = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(timer);
   }, [sent, secondsLeft]);
+
+  // Once the verification email is sent, this tab is waiting on the user to
+  // verify + sign in from the tab the email link opens. When that happens, move
+  // this tab to the dashboard instead of leaving it on the stale "check your
+  // email" screen.
+  useRedirectToDashboardOnSignIn(!!sent);
 
   const onSubmit = async (values: SignUpValues) => {
     setFormError(null);
