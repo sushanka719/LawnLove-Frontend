@@ -15,21 +15,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { UserAvatar } from "@/components/dashboard/user-avatar";
 import { useSession, useSignOut } from "@/hooks/use-session";
 import { cn } from "@/lib/utils";
-
-function getInitials(name?: string, email?: string) {
-  if (name) {
-    const parts = name.trim().split(/\s+/);
-    return (
-      parts
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join("") || "?"
-    );
-  }
-  return email?.[0]?.toUpperCase() ?? "?";
-}
 
 type NavItem = {
   label: string;
@@ -123,9 +111,14 @@ export function DashboardSidebar() {
           aria-label="View profile"
           className="flex min-w-0 flex-1 items-center gap-2.5"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#fecd03] text-[19px] font-medium text-white uppercase">
-            {getInitials(user?.name, user?.email)}
-          </div>
+          <UserAvatar
+            name={user?.name}
+            email={user?.email}
+            image={user?.image}
+            className="size-10"
+            textClassName="text-[19px]"
+            sizes="40px"
+          />
           <div className="min-w-0 flex-1">
             <p className="text-lawn-text-primary truncate text-base font-semibold tracking-tight">
               {displayName}
