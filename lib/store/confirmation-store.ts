@@ -4,7 +4,8 @@ import { createJSONStorage, persist } from "zustand/middleware";
 // A snapshot of the just-completed booking, captured at submit time (before the
 // booking store is reset) so the /booking/confirmed page can show real details.
 export type ConfirmationData = {
-  bookingId: string;
+  bookingId: string; // display reference, e.g. "LL-A1B2C3"
+  rawId: string; // real booking id, for linking to /dashboard/bookings/:id
   address: string;
   date: string; // YYYY-MM-DD
   timeSlot: string; // morning | midday | afternoon | evening

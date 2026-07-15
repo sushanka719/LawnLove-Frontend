@@ -4,8 +4,8 @@ import {
   NotificationBell,
 } from "@/components/dashboard/dashboard-actions";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
+import { ServicesSection } from "@/components/dashboard/services-section";
 import { StatCards } from "@/components/dashboard/stat-cards";
-import { PastVisitSection, UpcomingSection } from "@/components/dashboard/visit-list";
 
 export default function DashboardPage() {
   return (
@@ -21,8 +21,7 @@ export default function DashboardPage() {
       }
     >
       <StatCards />
-      <UpcomingSection />
-      <PastVisitSection />
+      <ServicesSection />
     </DashboardPanel>
   );
 }
