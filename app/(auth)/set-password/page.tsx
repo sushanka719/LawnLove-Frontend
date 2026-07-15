@@ -11,7 +11,11 @@ import { AuthTextField } from "@/components/auth/auth-text-field";
 import { ExpiredLinkCard } from "@/components/auth/expired-link-card";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
-import { setPassword } from "@/lib/api/auth";
+import {
+  buildSetPasswordCallbackURL,
+  setPassword,
+  signUpWithMagicLink,
+} from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/http";
 import { newPasswordSchema } from "@/lib/validation/auth-schemas";
 
@@ -57,11 +61,25 @@ function SetPasswordForm() {
   };
 
   if (searchParams.get("error") === "INVALID_TOKEN") {
+    const email = searchParams.get("email");
+    const name = searchParams.get("name");
+    const username = searchParams.get("username");
     return (
       <ExpiredLinkCard
-        email={searchParams.get("email")}
-        name={searchParams.get("name")}
-        username={searchParams.get("username")}
+        title="Verification Link Expired"
+        description="Your verification link has expired. Request a new link to continue creating your account."
+        email={email}
+        canResend={!!email && !!name && !!username}
+        onResend={() =>
+          signUpWithMagicLink({
+            email: email!,
+            name: name!,
+            username: username!,
+            callbackURL: buildSetPasswordCallbackURL(email!, name!, username!),
+          })
+        }
+        backHref="/signup"
+        backLabel="Back to Sign Up"
       />
     );
   }

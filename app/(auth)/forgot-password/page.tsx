@@ -10,7 +10,7 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { AuthTextField } from "@/components/auth/auth-text-field";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError } from "@/components/ui/field";
-import { requestPasswordReset } from "@/lib/api/auth";
+import { buildResetPasswordCallbackURL, requestPasswordReset } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/http";
 import { emailSchema } from "@/lib/validation/auth-schemas";
 
@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
     try {
       await requestPasswordReset({
         email: values.email,
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: buildResetPasswordCallbackURL(values.email),
       });
       setSentTo(values.email);
     } catch (error) {

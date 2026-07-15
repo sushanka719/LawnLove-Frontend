@@ -8,9 +8,14 @@ import { z } from "zod";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthTextField } from "@/components/auth/auth-text-field";
+import { ExpiredLinkCard } from "@/components/auth/expired-link-card";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
-import { resetPassword } from "@/lib/api/auth";
+import {
+  buildResetPasswordCallbackURL,
+  requestPasswordReset,
+  resetPassword,
+} from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/http";
 import { newPasswordSchema } from "@/lib/validation/auth-schemas";
 
@@ -30,6 +35,7 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const email = searchParams.get("email");
   const [formError, setFormError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const {
@@ -55,6 +61,25 @@ function ResetPasswordForm() {
       setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
+
+  if (searchParams.get("error") === "INVALID_TOKEN") {
+    return (
+      <ExpiredLinkCard
+        title="Reset Link Expired"
+        description="Your password reset link has expired. Request a new link to reset your password."
+        email={email}
+        canResend={!!email}
+        onResend={() =>
+          requestPasswordReset({
+            email: email!,
+            redirectTo: buildResetPasswordCallbackURL(email!),
+          })
+        }
+        backHref="/login"
+        backLabel="Back to Sign In"
+      />
+    );
+  }
 
   if (done) {
     return (
