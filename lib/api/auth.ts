@@ -20,6 +20,16 @@ export function buildSetPasswordCallbackURL(
   return url.toString();
 }
 
+// The password-reset link behaves the same way: better-auth redirects back to
+// this URL with `?token=...` on success, or `?error=INVALID_TOKEN` when the
+// reset link is expired/invalid/already used. We carry the email along so the
+// expired-link page can offer a resend without re-prompting for it.
+export function buildResetPasswordCallbackURL(email: string) {
+  const url = new URL("/reset-password", window.location.origin);
+  url.searchParams.set("email", email);
+  return url.toString();
+}
+
 export function signUpWithMagicLink(params: {
   email: string;
   name: string;
