@@ -33,7 +33,7 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="bg-lawn-bg-2 flex scroll-mt-5 flex-col items-center justify-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:min-h-screen lg:gap-16 lg:px-10 lg:py-24 xl:px-16 xl:py-28 2xl:gap-22 2xl:px-[240px] 2xl:py-32"
+      className="bg-lawn-bg-2 flex scroll-mt-5 flex-col items-center justify-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:gap-16 lg:px-10 lg:py-24 xl:px-16 xl:py-28 2xl:gap-22 2xl:px-[240px] 2xl:py-32"
     >
       <SectionHeading
         eyebrow="How It Works"
