@@ -9,9 +9,15 @@ import { z } from "zod";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthTextField } from "@/components/auth/auth-text-field";
+import { ExpiredLinkCard } from "@/components/auth/expired-link-card";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
-import { AuthError, resetPassword } from "@/lib/auth-client";
+import {
+  buildResetPasswordCallbackURL,
+  requestPasswordReset,
+  resetPassword,
+} from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/http";
 import { newPasswordSchema } from "@/lib/validation/auth-schemas";
 
 const resetPasswordSchema = z
@@ -30,6 +36,7 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const email = searchParams.get("email");
   const [formError, setFormError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -54,9 +61,28 @@ function ResetPasswordForm() {
       setDone(true);
       setTimeout(() => router.push("/login"), 1500);
     } catch (error) {
-      setFormError(error instanceof AuthError ? error.message : "Something went wrong.");
+      setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
   };
+
+  if (searchParams.get("error") === "INVALID_TOKEN") {
+    return (
+      <ExpiredLinkCard
+        title="Reset Link Expired"
+        description="Your password reset link has expired. Request a new link to reset your password."
+        email={email}
+        canResend={!!email}
+        onResend={() =>
+          requestPasswordReset({
+            email: email!,
+            redirectTo: buildResetPasswordCallbackURL(email!),
+          })
+        }
+        backHref="/login"
+        backLabel="Back to Sign In"
+      />
+    );
+  }
 
   if (done) {
     return (

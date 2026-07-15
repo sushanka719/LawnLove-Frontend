@@ -29,30 +29,9 @@ export const scheduleStepSchema = z.object({
 
 export type ScheduleStepValues = z.infer<typeof scheduleStepSchema>;
 
+// Card details are collected and validated by Stripe Elements, so the only
+// field we own here is the "save card" preference.
 export const paymentStepSchema = z.object({
-  cardNumber: z
-    .string()
-    .trim()
-    .min(1, "Card number is required.")
-    .refine(
-      (value) => /^\d{13,19}$/.test(value.replace(/\s/g, "")),
-      "Enter a valid card number.",
-    ),
-  expiry: z
-    .string()
-    .trim()
-    .min(1, "Expiry is required.")
-    .refine((value) => /^(0[1-9]|1[0-2])\/\d{2,4}$/.test(value), "Use MM/YY format."),
-  cvc: z
-    .string()
-    .trim()
-    .min(1, "CVC is required.")
-    .refine((value) => /^\d{3,4}$/.test(value), "Enter a valid CVC."),
-  zip: z
-    .string()
-    .trim()
-    .min(1, "ZIP is required.")
-    .refine((value) => /^\d{4,10}$/.test(value), "Enter a valid ZIP code."),
   saveCard: z.boolean(),
 });
 

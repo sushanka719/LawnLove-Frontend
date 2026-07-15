@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,15 +22,39 @@ export function AddressStep() {
   const storedAddress = useBookingStore((state) => state.address);
   const setStoredAddress = useBookingStore((state) => state.setAddress);
 
-  const defaultAddress = storedAddress.address || prefilledAddress;
+  // An address coming from the landing hero (?address=) is the user's latest
+  // intent, so it wins over any stale value left in the store from a previous
+  // session. When there's no hero param, fall back to the stored address so
+  // returning to this step mid-flow keeps what they entered.
+  const defaultAddress = prefilledAddress || storedAddress.address;
+
+  // Persist the hero address into the store (clearing any coordinates that
+  // belonged to a different, previously-stored address) and strip the param so
+  // it can't later override edits the user makes on this step.
+  useEffect(() => {
+    if (!prefilledAddress) {
+      return;
+    }
+    if (prefilledAddress !== storedAddress.address) {
+      setStoredAddress({
+        phoneNumber: storedAddress.phoneNumber,
+        address: prefilledAddress,
+        lat: null,
+        lng: null,
+      });
+    }
+    router.replace("/booking/address");
+    // Run once on mount to consume the incoming param.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const form = useForm<AddressStepValues>({
     resolver: zodResolver(addressStepSchema),
     defaultValues: {
       phoneNumber: storedAddress.phoneNumber,
       address: defaultAddress,
-      lat: storedAddress.lat,
-      lng: storedAddress.lng,
+      lat: prefilledAddress ? null : storedAddress.lat,
+      lng: prefilledAddress ? null : storedAddress.lng,
     },
   });
 
