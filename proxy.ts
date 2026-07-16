@@ -6,6 +6,10 @@ import { env } from "@/config/env";
 // sent to /login.
 const PROTECTED_ROUTES = ["/dashboard"];
 
+// Routes that additionally require role=agent. Signed-out visitors go to /login;
+// signed-in non-agents are bounced to their dashboard.
+const AGENT_ROUTES = ["/agent"];
+
 // Auth entry points that only make sense while signed out — authenticated
 // visitors are bounced to the dashboard. Deliberately excludes /reset-password
 // and /set-password: those are token/session-gated flows that are legitimately
@@ -16,7 +20,9 @@ const GUEST_ONLY_ROUTES = ["/login", "/signup", "/forgot-password"];
 const matches = (pathname: string, route: string) =>
   pathname === route || pathname.startsWith(`${route}/`);
 
-async function getSession(request: NextRequest) {
+type SessionResponse = { user?: { role?: string | null } } | null;
+
+async function getSession(request: NextRequest): Promise<SessionResponse> {
   const cookie = request.headers.get("cookie");
 
   return fetch(`${env.NEXT_PUBLIC_API_URL}/api/auth/get-session`, {
@@ -30,12 +36,19 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected = PROTECTED_ROUTES.some((route) => matches(pathname, route));
+  const isAgent = AGENT_ROUTES.some((route) => matches(pathname, route));
   const isGuestOnly = GUEST_ONLY_ROUTES.some((route) => matches(pathname, route));
 
   const session = await getSession(request);
 
-  if (isProtected && !session) {
+  if ((isProtected || isAgent) && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Agent area is role-gated — a signed-in customer landing here goes to their
+  // own dashboard rather than seeing a 403.
+  if (isAgent && session?.user?.role !== "agent") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   if (isGuestOnly && session) {
@@ -46,5 +59,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup", "/forgot-password"],
+  matcher: [
+    "/dashboard/:path*",
+    "/agent/:path*",
+    "/login",
+    "/signup",
+    "/forgot-password",
+  ],
 };

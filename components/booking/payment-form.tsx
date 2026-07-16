@@ -134,6 +134,7 @@ function PaymentFormBody() {
       // Snapshot the details for the confirmation page before clearing the store.
       setConfirmation({
         bookingId: `LL-${booking.id.slice(-6).toUpperCase()}`,
+        rawId: booking.id,
         address: address.address,
         date: schedule.date,
         timeSlot: schedule.timeSlot,
