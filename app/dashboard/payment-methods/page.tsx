@@ -1,9 +1,5 @@
-import { Plus } from "lucide-react";
-
-import {
-  GradientButton,
-  NotificationBell,
-} from "@/components/dashboard/dashboard-actions";
+import { AddCardButton } from "@/components/dashboard/add-card-dialog";
+import { NotificationBell } from "@/components/dashboard/dashboard-actions";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 import { PaymentMethodsList } from "@/components/dashboard/payment-methods-list";
 
@@ -15,7 +11,7 @@ export default function PaymentMethodsPage() {
       actions={
         <>
           <NotificationBell />
-          <GradientButton icon={Plus}>Add card</GradientButton>
+          <AddCardButton />
         </>
       }
     >
