@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { MeasuredAreaCard } from "@/components/booking/measured-area-card";
 import { PropertyMap } from "@/components/booking/property-map";
 import { BOOKING_STEPS } from "@/lib/booking-steps";
-import { polygonAreaSqFt, type LatLng } from "@/lib/geo";
+import { MAX_LAWN_AREA_SQ_FT, polygonAreaSqFt, type LatLng } from "@/lib/geo";
 import { geocodeAddress } from "@/lib/mapbox";
 import { computeBasePrice, ESTIMATED_AREA_FACTOR } from "@/lib/pricing";
 import { useBookingStore } from "@/lib/store/booking-store";
@@ -55,9 +55,41 @@ export function PropertyForm() {
     };
   }, [center, address, setAddress]);
 
-  const handleAddPoint = (point: LatLng) => setPoints((prev) => [...prev, point]);
-  const handleMovePoint = (index: number, point: LatLng) =>
-    setPoints((prev) => prev.map((existing, i) => (i === index ? point : existing)));
+  // Bumped whenever an edit is rejected for exceeding the area cap; drives a
+  // transient notice that auto-clears after a few seconds.
+  const [limitHits, setLimitHits] = useState(0);
+
+  useEffect(() => {
+    if (limitHits === 0) {
+      return;
+    }
+    const timeout = setTimeout(() => setLimitHits(0), 4000);
+    return () => clearTimeout(timeout);
+  }, [limitHits]);
+
+  const withinLimit = (candidate: LatLng[]) =>
+    polygonAreaSqFt(candidate) <= MAX_LAWN_AREA_SQ_FT;
+
+  const handleAddPoint = (point: LatLng): boolean => {
+    const next = [...points, point];
+    if (!withinLimit(next)) {
+      setLimitHits((count) => count + 1);
+      return false;
+    }
+    setPoints(next);
+    return true;
+  };
+
+  const handleMovePoint = (index: number, point: LatLng): boolean => {
+    const next = points.map((existing, i) => (i === index ? point : existing));
+    if (!withinLimit(next)) {
+      setLimitHits((count) => count + 1);
+      return false;
+    }
+    setPoints(next);
+    return true;
+  };
+
   const handleRemovePoint = (index: number) =>
     setPoints((prev) => prev.filter((_, i) => i !== index));
 
@@ -122,6 +154,16 @@ export function PropertyForm() {
       </div>
 
       <div className="flex w-full flex-col items-center gap-6 lg:max-w-[449px]">
+        {limitHits > 0 && (
+          <div
+            role="alert"
+            className="text-destructive border-destructive/30 bg-destructive/10 w-full rounded-xl border px-4 py-3 text-sm font-medium"
+          >
+            Maximum lawn area is {MAX_LAWN_AREA_SQ_FT.toLocaleString()} sq ft. Move or
+            remove a corner to stay within the limit.
+          </div>
+        )}
+
         <MeasuredAreaCard
           areaSqFt={areaSqFt}
           estimatedAreaSqFt={estimatedAreaSqFt}
