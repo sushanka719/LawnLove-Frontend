@@ -16,9 +16,10 @@ import { SubmitButton } from "@/components/auth/submit-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { sessionQueryKey } from "@/hooks/use-session";
-import { signInWithEmail, signInWithGoogle } from "@/lib/api/auth";
+import { getSession, signInWithEmail, signInWithGoogle } from "@/lib/api/auth";
 import { broadcastAuthSignal } from "@/lib/auth-channel";
 import { ApiError } from "@/lib/api/http";
+import { homeForRole, safeNext } from "@/lib/auth-routes";
 import { emailSchema, loginPasswordSchema } from "@/lib/validation/auth-schemas";
 
 const signInSchema = z.object({
@@ -29,18 +30,12 @@ const signInSchema = z.object({
 
 type SignInValues = z.infer<typeof signInSchema>;
 
-// Only allow same-origin relative redirects to avoid open-redirect abuse.
-function safeNext(next: string | null): string {
-  if (next && next.startsWith("/") && !next.startsWith("//")) {
-    return next;
-  }
-  return "/dashboard";
-}
-
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = safeNext(searchParams.get("next"));
+  // An explicit ?next= (set when a protected route bounced the user here) wins;
+  // otherwise we send them to the home that matches their role after sign-in.
+  const nextParam = safeNext(searchParams.get("next"));
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   // `router.push` returns immediately, so `isSubmitting` alone would clear the
@@ -68,7 +63,15 @@ function LoginForm() {
       // Let any other tab still parked on a pre-auth screen follow us in.
       broadcastAuthSignal("signed-in");
       setRedirecting(true);
-      router.push(redirectTo);
+      // Honor an explicit ?next=; otherwise route by role (admins → /admin,
+      // agents → /agent, customers → /dashboard). Read the fresh session so the
+      // role is authoritative rather than trusting the sign-in response shape.
+      let dest = nextParam;
+      if (!dest) {
+        const session = await getSession();
+        dest = homeForRole(session?.user?.role);
+      }
+      router.push(dest);
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
@@ -77,7 +80,12 @@ function LoginForm() {
   const handleGoogleSignIn = async () => {
     setFormError(null);
     try {
-      await signInWithGoogle(`${window.location.origin}${redirectTo}`);
+      // OAuth can't know the role before it completes, so land on a small
+      // forwarder that reads the session and routes by role (honoring ?next=).
+      const forwarder = `/continue${
+        nextParam ? `?next=${encodeURIComponent(nextParam)}` : ""
+      }`;
+      await signInWithGoogle(`${window.location.origin}${forwarder}`);
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Something went wrong.");
     }
