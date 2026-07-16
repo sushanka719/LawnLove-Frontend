@@ -2,8 +2,8 @@ import {
   NewBookingButton,
   NotificationBell,
 } from "@/components/dashboard/dashboard-actions";
+import { BookingList } from "@/components/dashboard/booking-list";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
-import { PastVisitSection, UpcomingSection } from "@/components/dashboard/visit-list";
 
 export default function BookingsPage() {
   return (
@@ -17,8 +17,7 @@ export default function BookingsPage() {
         </>
       }
     >
-      <UpcomingSection />
-      <PastVisitSection />
+      <BookingList />
     </DashboardPanel>
   );
 }
