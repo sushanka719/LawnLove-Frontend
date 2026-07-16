@@ -74,7 +74,6 @@ function PaymentFormBody() {
   const schedule = useBookingStore((state) => state.schedule);
   const storedPayment = useBookingStore((state) => state.payment);
   const setStoredPayment = useBookingStore((state) => state.setPayment);
-  const reset = useBookingStore((state) => state.reset);
 
   const setConfirmation = useConfirmationStore((state) => state.setConfirmation);
 
@@ -131,7 +130,11 @@ function PaymentFormBody() {
         saveCard,
       });
 
-      // Snapshot the details for the confirmation page before clearing the store.
+      // Snapshot the details for the confirmation page. The booking store is
+      // cleared on the confirmation page (see BookingConfirmed), not here: if we
+      // reset it now, the route guard would see an empty store while we're still
+      // on /booking/payment and race us back to the address step before the
+      // navigation below lands.
       setConfirmation({
         bookingId: `LL-${booking.id.slice(-6).toUpperCase()}`,
         rawId: booking.id,
@@ -140,7 +143,6 @@ function PaymentFormBody() {
         timeSlot: schedule.timeSlot,
       });
 
-      reset();
       router.push("/booking/confirmed");
     } catch (err) {
       const message =
