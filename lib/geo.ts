@@ -1,5 +1,11 @@
 export type LatLng = { lat: number; lng: number };
 
+// Hard cap on the lawn boundary a user is allowed to draw. Corners that would
+// push the polygon past this are rejected, so it's impossible to "select the
+// whole world". 43,560 sq ft = 1 acre — a generous residential ceiling; adjust
+// here if the business needs to serve larger properties.
+export const MAX_LAWN_AREA_SQ_FT = 43_560;
+
 const EARTH_RADIUS_METERS = 6378137;
 const SQ_METERS_PER_SQ_FOOT = 0.09290304;
 

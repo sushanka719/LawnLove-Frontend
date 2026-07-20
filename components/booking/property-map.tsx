@@ -15,8 +15,10 @@ const BOUNDARY_SOURCE_ID = "lawn-boundary";
 type PropertyMapProps = {
   center: LatLng | null;
   points: LatLng[];
-  onAddPoint: (point: LatLng) => void;
-  onMovePoint: (index: number, point: LatLng) => void;
+  // Return `false` to reject the edit (e.g. it would exceed the area limit); the
+  // map keeps its current geometry and, for a drag, snaps the marker back.
+  onAddPoint: (point: LatLng) => boolean;
+  onMovePoint: (index: number, point: LatLng) => boolean;
   onRemovePoint: (index: number) => void;
   className?: string;
 };
@@ -79,7 +81,15 @@ export function PropertyMap({
       style: "mapbox://styles/mapbox/satellite-streets-v12",
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
+      // Keep it flat and north-up like Google Maps: no tilt, no rotation — the
+      // user only pans and zooms a top-down satellite view.
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
+      maxPitch: 0,
     });
+    // Belt-and-suspenders: also kill two-finger rotation on touch devices.
+    map.touchZoomRotate.disableRotation();
 
     map.on("load", () => {
       map.addSource(BOUNDARY_SOURCE_ID, {
@@ -112,6 +122,12 @@ export function PropertyMap({
       markersRef.current = [];
       map.remove();
       mapRef.current = null;
+      // Tie the "already focused" flag to the map instance, not the component:
+      // when this map is torn down (e.g. React Strict Mode's dev mount→cleanup→
+      // mount cycle) the next map instance must be allowed to focus again.
+      // Otherwise a center that was already set on mount focuses the discarded
+      // map, and the surviving one stays at the default world view.
+      hasFocusedRef.current = false;
     };
   }, []);
 
@@ -142,7 +158,15 @@ export function PropertyMap({
 
       marker.on("dragend", () => {
         const lngLat = marker.getLngLat();
-        onMovePointRef.current(index, { lat: lngLat.lat, lng: lngLat.lng });
+        const accepted = onMovePointRef.current(index, {
+          lat: lngLat.lat,
+          lng: lngLat.lng,
+        });
+        // Rejected (over the area limit): return the pin to where it started so
+        // the marker never drifts out of sync with the stored geometry.
+        if (!accepted) {
+          marker.setLngLat([point.lng, point.lat]);
+        }
       });
 
       marker.getElement().addEventListener("dblclick", (event) => {
