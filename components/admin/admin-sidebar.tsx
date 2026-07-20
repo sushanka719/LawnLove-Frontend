@@ -1,119 +1,136 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   Calendar,
-  ClipboardList,
-  HardHat,
+  CreditCard,
   LayoutGrid,
+  LifeBuoy,
   LogOut,
-  TriangleAlert,
+  Scissors,
+  Settings,
+  Sprout,
+  UserRound,
   Users,
   type LucideIcon,
 } from "lucide-react";
 
-import { UserAvatar } from "@/components/dashboard/user-avatar";
-import { useSession, useSignOut } from "@/hooks/use-session";
 import { cn } from "@/lib/utils";
 
-type NavItem = { label: string; icon: LucideIcon; href: string };
+type NavItem = {
+  label: string;
+  icon: LucideIcon;
+  href: string;
+  /** Muted count shown on the right (Management group). */
+  badge?: string;
+  /** Red pill count shown on the right (Operations group). */
+  pill?: string;
+};
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Overview", icon: LayoutGrid, href: "/admin" },
-  { label: "Users", icon: Users, href: "/admin/users" },
-  { label: "Agents", icon: HardHat, href: "/admin/agents" },
+const PRIMARY_NAV: NavItem[] = [{ label: "Dashboard", icon: LayoutGrid, href: "/admin" }];
+
+const MANAGEMENT_NAV: NavItem[] = [
+  { label: "Agents", icon: Users, href: "/admin/agents", badge: "218" },
+  { label: "Customers", icon: UserRound, href: "/admin/users" },
   { label: "Bookings", icon: Calendar, href: "/admin/bookings" },
-  { label: "Jobs", icon: ClipboardList, href: "/admin/jobs" },
-  { label: "Disputes", icon: TriangleAlert, href: "/admin/disputes" },
+];
+
+// These routes don't exist yet — placeholders while the dashboard is static.
+const OPERATIONS_NAV: NavItem[] = [
+  { label: "Services", icon: Scissors, href: "#" },
+  { label: "Payments", icon: CreditCard, href: "#" },
+  { label: "Analytics", icon: BarChart3, href: "#" },
+  { label: "Support", icon: LifeBuoy, href: "#", pill: "3" },
+  { label: "Settings", icon: Settings, href: "#" },
 ];
 
 function isActive(pathname: string, href: string) {
+  if (href === "#") return false;
   return href === "/admin" ? pathname === href : pathname.startsWith(href);
 }
 
-function itemClasses(active: boolean) {
-  return cn(
-    "flex w-full items-center gap-2.5 rounded-lg p-3 text-left text-lg font-medium tracking-tight transition-colors",
-    active
-      ? "bg-lawn-badge-bg text-lawn-primary"
-      : "text-lawn-text-secondary hover:bg-black/[0.03]",
+function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const { label, icon: Icon, href, badge, pill } = item;
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+        active ? "bg-accent text-foreground" : "text-foreground hover:bg-accent",
+      )}
+    >
+      <Icon
+        className={cn(
+          "size-[18px] shrink-0",
+          active ? "text-foreground" : "text-muted-foreground",
+        )}
+      />
+      <span className="flex-1 truncate">{label}</span>
+      {badge && <span className="text-muted-foreground text-xs">{badge}</span>}
+      {pill && (
+        <span className="bg-destructive inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold text-white">
+          {pill}
+        </span>
+      )}
+    </Link>
   );
 }
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { data: session } = useSession();
-  const signOut = useSignOut();
-
-  const user = session?.user;
-  const displayName = user?.name || user?.email || "Admin";
-
-  const handleSignOut = () => {
-    if (signOut.isPending) return;
-    signOut.mutate(undefined, { onSuccess: () => router.push("/") });
-  };
 
   return (
-    <aside className="bg-lawn-bg-2 hidden w-72 shrink-0 flex-col rounded-xl shadow-[0px_0px_12px_2px_rgba(116,116,116,0.1)] lg:flex">
-      <Link href="/" className="flex h-22 shrink-0 items-center gap-2 px-5">
-        <Image src="/landing/logo-mark.svg" alt="" width={32} height={39} />
-        <span className="text-lawn-text-primary font-heading text-[22px] font-semibold tracking-tight">
-          LawnLove
+    <aside className="bg-sidebar border-sidebar-border sticky top-0 hidden h-screen w-[260px] shrink-0 flex-col border-r lg:flex">
+      {/* Brand */}
+      <Link href="/admin" className="flex items-center gap-3 px-5 py-[22px]">
+        <span className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-[10px]">
+          <Sprout className="size-[22px]" />
         </span>
-        <span className="bg-lawn-badge-bg text-lawn-primary ml-1 rounded-md px-2 py-0.5 text-xs font-semibold tracking-tight">
-          Admin
+        <span className="flex flex-col">
+          <span className="text-[15px] font-semibold tracking-[-0.01em]">LawnLove</span>
+          <span className="text-muted-foreground text-xs">Super Admin</span>
         </span>
       </Link>
 
-      <nav className="flex flex-1 flex-col gap-2 px-5 pt-6">
-        {NAV_ITEMS.map(({ label, icon: Icon, href }) => {
-          const active = isActive(pathname, href);
-          return (
-            <Link
-              key={label}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={itemClasses(active)}
-            >
-              <Icon className="size-7 shrink-0" strokeWidth={active ? 2 : 1.75} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-1">
+        {PRIMARY_NAV.map((item) => (
+          <NavLink key={item.label} item={item} active={isActive(pathname, item.href)} />
+        ))}
+
+        <div className="text-muted-foreground flex items-center justify-between px-3 pt-4 pb-1.5 text-[11px] font-semibold tracking-[0.06em]">
+          MANAGEMENT
+        </div>
+        {MANAGEMENT_NAV.map((item) => (
+          <NavLink key={item.label} item={item} active={isActive(pathname, item.href)} />
+        ))}
+
+        <div className="text-muted-foreground px-3 pt-4 pb-1.5 text-[11px] font-semibold tracking-[0.06em]">
+          OPERATIONS
+        </div>
+        {OPERATIONS_NAV.map((item) => (
+          <NavLink key={item.label} item={item} active={isActive(pathname, item.href)} />
+        ))}
       </nav>
 
-      <div className="mx-5 mt-4 mb-6 flex items-center gap-2.5 rounded-[10px] p-3 shadow-[0px_0px_16px_2px_rgba(25,81,52,0.1)]">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <UserAvatar
-            name={user?.name}
-            email={user?.email}
-            image={user?.image}
-            className="size-10"
-            textClassName="text-[19px]"
-            sizes="40px"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-lawn-text-primary truncate text-base font-semibold tracking-tight">
-              {displayName}
-            </p>
-            {user?.email && (
-              <p className="text-lawn-text-tertiary truncate text-base font-medium tracking-tight">
-                {user.email}
-              </p>
-            )}
-          </div>
+      {/* Account — static placeholder; wire to useSession() when going live. */}
+      <div className="border-sidebar-border flex items-center gap-3 border-t px-4 py-3.5">
+        <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-full text-[13px] font-semibold">
+          AM
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-semibold">Alex Morgan</p>
+          <p className="text-muted-foreground truncate text-xs">alex@lawnlove.co</p>
         </div>
         <button
           type="button"
-          onClick={handleSignOut}
-          disabled={signOut.isPending}
           aria-label="Log out"
-          className="text-lawn-text-secondary hover:text-lawn-primary shrink-0 transition-colors disabled:opacity-50"
+          className="text-muted-foreground hover:bg-accent flex shrink-0 rounded-lg p-1.5 transition-colors"
         >
-          <LogOut className="size-6" strokeWidth={1.75} />
+          <LogOut className="size-[18px]" />
         </button>
       </div>
     </aside>

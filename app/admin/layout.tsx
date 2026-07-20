@@ -4,11 +4,9 @@ export default function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="bg-lawn-bg-2 min-h-screen p-4 sm:p-6">
-      <div className="flex h-[calc(100dvh-2rem)] gap-6 sm:h-[calc(100dvh-3rem)]">
-        <AdminSidebar />
-        {children}
-      </div>
+    <div className="bg-background text-foreground flex min-h-screen">
+      <AdminSidebar />
+      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
     </div>
   );
 }
