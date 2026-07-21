@@ -62,19 +62,27 @@ const initialState = {
   schedule: { date: "", timeSlot: "" },
 } satisfies Omit<
   BookingState,
-  | "setAddress"
-  | "setProperty"
-  | "setPricing"
-  | "setPlan"
-  | "setSchedule"
-  | "reset"
+  "setAddress" | "setProperty" | "setPricing" | "setPlan" | "setSchedule" | "reset"
 >;
 
 export const useBookingStore = create<BookingState>()(
   persist(
     (set) => ({
       ...initialState,
-      setAddress: (data) => set({ address: data }),
+      setAddress: (data) =>
+        set((state) => ({
+          address: data,
+          // The property boundary/area were mapped for the PREVIOUS address. If
+          // the address itself changes, that outline no longer describes the new
+          // location — keeping it reopens the property step showing the old
+          // lawn's droplets (and gates the flow on a stale measurement). Drop it
+          // on a real address change. A same-address update (e.g. the property
+          // step writing geocoded coords back) keeps the mapping intact.
+          property:
+            data.address.trim() === state.address.address.trim()
+              ? state.property
+              : initialState.property,
+        })),
       setProperty: (data) => set({ property: data }),
       setPricing: (data) => set({ pricing: data }),
       setPlan: (data) => set({ plan: data }),
