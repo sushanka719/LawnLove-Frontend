@@ -62,6 +62,15 @@ export function getBookings(page = 1, pageSize = 10) {
   );
 }
 
+// A current recurring plan (active/past-due subscription) for the Settings
+// "Plan" section. Same shape as a booking list row; the endpoint returns an
+// unpaginated (capped) array so all of a customer's plans arrive at once.
+export type CurrentPlan = BookingListItem;
+
+export function getCurrentPlans() {
+  return http.get<CurrentPlan[]>("/bookings/current-plans");
+}
+
 export type BookingJobSummary = {
   id: string;
   status: JobStatus;
