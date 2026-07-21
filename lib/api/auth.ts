@@ -113,3 +113,19 @@ export async function signOut() {
 export function setPassword(newPassword: string) {
   return http.post("/auth/set-password", { newPassword });
 }
+
+// Signed-in password change. better-auth verifies `currentPassword`, then
+// rehashes the new one. `revokeOtherSessions` logs out the account everywhere
+// else; the current session stays valid (its cookie is refreshed). Fails for
+// accounts without a password credential (e.g. Google-only sign-ups) — the
+// caller surfaces that message.
+export function changePassword(params: {
+  currentPassword: string;
+  newPassword: string;
+  revokeOtherSessions?: boolean;
+}) {
+  return http.post<{ token: string | null }>(
+    `${AUTH_PREFIX}/change-password`,
+    params,
+  );
+}

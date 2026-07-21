@@ -1,5 +1,5 @@
-import { AgentJobs } from "@/components/agent/agent-jobs";
+import { AgentDashboard } from "@/components/agent/agent-dashboard";
 
-export default function AgentJobsPage() {
-  return <AgentJobs />;
+export default function AgentDashboardPage() {
+  return <AgentDashboard />;
 }

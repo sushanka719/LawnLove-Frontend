@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Search, Ban } from "lucide-react";
+import { ChevronRight, Search, Ban, Clock } from "lucide-react";
 
 import { Pagination } from "@/components/dashboard/pagination";
 import { RoleBadge } from "@/components/admin/role-badge";
@@ -113,6 +113,11 @@ export function AdminUsers() {
                   {u.banned && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
                       <Ban className="size-3" /> Banned
+                    </span>
+                  )}
+                  {u.deletionScheduledAt && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                      <Clock className="size-3" /> Scheduled for deletion
                     </span>
                   )}
                 </div>

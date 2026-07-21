@@ -55,14 +55,23 @@ export function OrderSummarySidebar({
           <p className="text-lawn-text-tertiary text-lg">Subtotal</p>
           <p className="text-lawn-text-secondary text-lg font-semibold">${subtotal}</p>
         </div>
-        <div className="flex items-center justify-between">
-          <p className="text-lawn-text-tertiary text-lg">
-            {frequencyLabel || "Frequency"}
-          </p>
-          <p className="text-lawn-text-secondary text-lg font-semibold">
-            -{Math.round(discountPct * 100)}%
-          </p>
-        </div>
+        {discountPct > 0 ? (
+          <div className="flex items-center justify-between">
+            <p className="text-lawn-text-tertiary text-lg">
+              {frequencyLabel || "Frequency"}
+            </p>
+            <p className="text-lawn-text-secondary text-lg font-semibold">
+              -{Math.round(discountPct * 100)}%
+            </p>
+          </div>
+        ) : totalPerVisit > subtotal ? (
+          <div className="flex items-center justify-between">
+            <p className="text-lawn-text-tertiary text-lg">Area surcharge</p>
+            <p className="text-lawn-text-secondary text-lg font-semibold">
+              +${totalPerVisit - subtotal}
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex flex-col">

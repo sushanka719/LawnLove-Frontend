@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { useBookingStore } from "@/lib/store/booking-store";
 import { useConfirmationStore } from "@/lib/store/confirmation-store";
 
 const TIME_WINDOW_RANGES: Record<string, string> = {
@@ -37,6 +39,16 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 export function BookingConfirmed() {
   const confirmation = useConfirmationStore((state) => state.confirmation);
+  const resetBooking = useBookingStore((state) => state.reset);
+
+  // The booking succeeded and we've already snapshotted its details into the
+  // confirmation store, so clear the working draft here. This is the single
+  // place the booking store is reset: doing it now (safely off the flow, on a
+  // page the route guard never gates) means a new booking starts clean and the
+  // guard re-gates every step from scratch.
+  useEffect(() => {
+    resetBooking();
+  }, [resetBooking]);
 
   const visitDuration = confirmation
     ? `${formatDate(confirmation.date)} ${capitalize(confirmation.timeSlot)}(${

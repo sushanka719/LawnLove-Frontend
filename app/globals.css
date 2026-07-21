@@ -168,6 +168,51 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/**
+ * Admin panel theme — warm cream + forest-green LawnLove palette (from Figma
+ * node 942:1262). Scoped to `.admin-theme` so it overrides the neutral shadcn
+ * tokens ONLY inside the admin shell, leaving the rest of the app untouched.
+ * Descendants pick this up automatically via `bg-card`, `text-primary`, the
+ * `--chart-*` slots consumed by the shadcn chart components, etc.
+ */
+.admin-theme {
+  --background: #fbf9f1; /* page — warm cream */
+  --foreground: #1a1a1a; /* Text/Primary */
+  --card: #fffdf8; /* cards — near-white cream (Background/Bg_2 ≈ #fffcf5) */
+  --card-foreground: #1a1a1a;
+  --popover: #fffdf8;
+  --popover-foreground: #1a1a1a;
+  --primary: #195134; /* Primary — forest green */
+  --primary-foreground: #ffffff;
+  --secondary: #fecd03; /* Secondary — gold */
+  --secondary-foreground: #1a1a1a;
+  --muted: #f2f0e6;
+  --muted-foreground: #6b6b6b; /* between Text/Secondary #525252 and Tertiary #999 */
+  --accent: #e8ecd6; /* Badge_bg — soft sage; active nav + hover */
+  --accent-foreground: #195134;
+  --destructive: #e02929; /* Error */
+  --border: rgba(206, 206, 206, 0.5); /* Stroke #cecece @ 50% */
+  --input: #e4e1d5;
+  --ring: #195134;
+  --radius: 0.75rem; /* 12px cards */
+
+  /* Chart palette — pulled from the Figma marks */
+  --chart-1: #fecd03; /* gold — revenue line / total-revenue spark */
+  --chart-2: #34d1a1; /* teal — completed / agents spark */
+  --chart-3: #6633e9; /* purple — scheduled */
+  --chart-4: #ff7a5b; /* coral — cancelled / active-users spark */
+  --chart-5: #4b7bec; /* blue — bookings spark */
+
+  --sidebar: #fffdf8;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #195134;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8ecd6;
+  --sidebar-accent-foreground: #195134;
+  --sidebar-border: rgba(206, 206, 206, 0.4);
+  --sidebar-ring: #195134;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
