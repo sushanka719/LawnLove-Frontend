@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Ban, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Ban, Clock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { RoleBadge } from "@/components/admin/role-badge";
@@ -118,6 +118,11 @@ export function AdminUserDetail() {
                   <Ban className="size-3" /> Banned
                 </span>
               )}
+              {user.deletionScheduledAt && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                  <Clock className="size-3" /> Scheduled for deletion
+                </span>
+              )}
             </div>
             <p className="text-lawn-text-secondary mt-1 text-base tracking-tight">
               {user.email}
@@ -125,6 +130,16 @@ export function AdminUserDetail() {
             <p className="text-lawn-text-tertiary mt-0.5 text-sm tracking-tight">
               Joined {new Date(user.createdAt).toLocaleDateString()}
             </p>
+            {user.deletionScheduledAt && (
+              <p className="mt-1 text-sm font-medium tracking-tight text-amber-700">
+                Deletion requested
+                {user.deletionRequestedAt
+                  ? ` ${new Date(user.deletionRequestedAt).toLocaleDateString()}`
+                  : ""}
+                {" · "}permanently deletes{" "}
+                {new Date(user.deletionScheduledAt).toLocaleDateString()}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
