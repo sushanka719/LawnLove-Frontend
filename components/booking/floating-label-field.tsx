@@ -32,11 +32,19 @@ export const FloatingLabelField = React.forwardRef<
         )}
       >
         {floated && icon}
+        {/*
+          `defaultValue` is intentionally NOT forwarded to the Base UI input.
+          This field is registered with react-hook-form, which owns the value
+          and applies the initial value through the ref on mount. Base UI treats
+          `defaultValue` as a one-time initializer and warns if it changes after
+          init — which it does here, since the value derives from the persisted
+          store (hydrated post-mount) and the stripped `?address=` param. We
+          still use the prop below to seed the floating-label state.
+        */}
         <Input
           {...props}
           id={fieldId}
           ref={ref}
-          defaultValue={defaultValue}
           placeholder={floated ? undefined : label}
           onFocus={(event) => {
             setFocused(true);

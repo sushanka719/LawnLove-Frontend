@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import type { Frequency } from "@/lib/pricing";
+import type { PlanBillingType } from "@/lib/api/plans";
 
 export type AddressData = {
   phoneNumber: string;
@@ -17,6 +18,8 @@ export type PropertyData = {
   totalPrice: number;
 };
 
+// Display pricing (WHOLE DOLLARS) shown in the order summary / review. Derived
+// from the selected plan at schedule time. `frequency` labels the cadence.
 export type PricingData = {
   subtotal: number;
   frequency: Frequency | "";
@@ -24,29 +27,30 @@ export type PricingData = {
   totalPerVisit: number;
 };
 
+// The chosen plan and the exact amount (CENTS) to charge — drives the payment
+// step's Payment Element (mode + amount) and the POST /bookings body.
+export type PlanSelection = {
+  planId: string;
+  billingType: PlanBillingType | "";
+  amountCents: number;
+};
+
 export type ScheduleData = {
   date: string;
   timeSlot: string;
-};
-
-// Raw card data is never stored — it lives only inside Stripe Elements and is
-// exchanged for a payment method id at submit time. We keep only the user's
-// "save card" preference here.
-export type PaymentData = {
-  saveCard: boolean;
 };
 
 type BookingState = {
   address: AddressData;
   property: PropertyData;
   pricing: PricingData;
+  plan: PlanSelection;
   schedule: ScheduleData;
-  payment: PaymentData;
   setAddress: (data: AddressData) => void;
   setProperty: (data: PropertyData) => void;
   setPricing: (data: PricingData) => void;
+  setPlan: (data: PlanSelection) => void;
   setSchedule: (data: ScheduleData) => void;
-  setPayment: (data: PaymentData) => void;
   reset: () => void;
 };
 
@@ -54,30 +58,44 @@ const initialState = {
   address: { phoneNumber: "", address: "", lat: null, lng: null },
   property: { boundary: [], areaSqFt: 0, estimatedAreaSqFt: 0, totalPrice: 0 },
   pricing: { subtotal: 0, frequency: "", discountPct: 0, totalPerVisit: 0 },
+  plan: { planId: "", billingType: "", amountCents: 0 },
   schedule: { date: "", timeSlot: "" },
-  payment: { saveCard: false },
 } satisfies Omit<
   BookingState,
-  "setAddress" | "setProperty" | "setPricing" | "setSchedule" | "setPayment" | "reset"
+  "setAddress" | "setProperty" | "setPricing" | "setPlan" | "setSchedule" | "reset"
 >;
 
 export const useBookingStore = create<BookingState>()(
   persist(
     (set) => ({
       ...initialState,
-      setAddress: (data) => set({ address: data }),
+      setAddress: (data) =>
+        set((state) => ({
+          address: data,
+          // The property boundary/area were mapped for the PREVIOUS address. If
+          // the address itself changes, that outline no longer describes the new
+          // location — keeping it reopens the property step showing the old
+          // lawn's droplets (and gates the flow on a stale measurement). Drop it
+          // on a real address change. A same-address update (e.g. the property
+          // step writing geocoded coords back) keeps the mapping intact.
+          property:
+            data.address.trim() === state.address.address.trim()
+              ? state.property
+              : initialState.property,
+        })),
       setProperty: (data) => set({ property: data }),
       setPricing: (data) => set({ pricing: data }),
+      setPlan: (data) => set({ plan: data }),
       setSchedule: (data) => set({ schedule: data }),
-      setPayment: (data) => set({ payment: data }),
       reset: () => set(initialState),
     }),
     {
       name: "lawnhate-booking",
       storage: createJSONStorage(() => sessionStorage),
-      version: 3,
-      migrate: (_persisted, version) =>
-        version === 3 ? (_persisted as BookingState) : initialState,
+      // v4: replaced the saved-card `payment` slice with a `plan` selection.
+      version: 4,
+      migrate: (persisted, version) =>
+        version === 4 ? (persisted as BookingState) : initialState,
     },
   ),
 );

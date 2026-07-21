@@ -1,120 +1,131 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Calendar,
-  ClipboardList,
-  HardHat,
+  CreditCard,
   LayoutGrid,
   LogOut,
-  TriangleAlert,
+  MapPin,
+  ScrollText,
+  Settings,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
-import { UserAvatar } from "@/components/dashboard/user-avatar";
-import { useSession, useSignOut } from "@/hooks/use-session";
 import { cn } from "@/lib/utils";
 
-type NavItem = { label: string; icon: LucideIcon; href: string };
+type NavItem = {
+  label: string;
+  icon: LucideIcon;
+  href: string;
+};
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Overview", icon: LayoutGrid, href: "/admin" },
-  { label: "Users", icon: Users, href: "/admin/users" },
-  { label: "Agents", icon: HardHat, href: "/admin/agents" },
+// Routes marked "#" are placeholders — no page exists for them yet.
+const NAV: NavItem[] = [
+  { label: "Dashboard", icon: LayoutGrid, href: "/admin" },
+  { label: "Agent", icon: Users, href: "/admin/agents" },
+  { label: "Customer", icon: MapPin, href: "/admin/users" },
   { label: "Bookings", icon: Calendar, href: "/admin/bookings" },
-  { label: "Jobs", icon: ClipboardList, href: "/admin/jobs" },
-  { label: "Disputes", icon: TriangleAlert, href: "/admin/disputes" },
+  { label: "Plans", icon: ScrollText, href: "/admin/plans" },
+  { label: "Earning", icon: CreditCard, href: "#" },
+  { label: "Payout", icon: Wallet, href: "#" },
+  { label: "Settings", icon: Settings, href: "#" },
 ];
 
 function isActive(pathname: string, href: string) {
+  if (href === "#") return false;
   return href === "/admin" ? pathname === href : pathname.startsWith(href);
 }
 
-function itemClasses(active: boolean) {
-  return cn(
-    "flex w-full items-center gap-2.5 rounded-lg p-3 text-left text-lg font-medium tracking-tight transition-colors",
-    active
-      ? "bg-lawn-badge-bg text-lawn-primary"
-      : "text-lawn-text-secondary hover:bg-black/[0.03]",
+/** The LawnLove leaf mark (green blade + gold accent), from the brand asset. */
+function LogoMark() {
+  return (
+    <svg
+      viewBox="0 0 32.0005 39.0002"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="size-7 shrink-0"
+      aria-hidden
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M0.00193343 12.4049C0.00290067 19.2276 0.143474 25.6657 0.314676 26.7121C0.974015 30.7489 3.89928 35.1109 7.25433 37.0598C9.82108 38.5511 11.4057 38.8323 17.8137 38.9331C21.1388 38.9855 23.8593 38.9538 23.859 38.8623C23.8587 38.7709 23.1442 38.3563 22.2711 37.9407C20.5665 37.1296 17.8337 34.5663 16.7124 32.727C14.9268 29.7979 14.7379 28.6333 14.5364 19.309L14.3767 11.9303C14.3575 11.0387 14.1437 10.1621 13.7505 9.36169L13.2835 8.41102C10.9879 3.73791 6.65077 0.53514 2.12439 0.170948L0 0L0.00193343 12.4049Z"
+        fill="#195134"
+      />
+      <path
+        d="M30.376 38.9331C22.884 39.6547 16.4361 34.4659 15.3353 26.8294L15.1138 25.2945H17.5178C20.394 25.2945 23.4134 26.1508 25.5588 27.575C28.8207 29.7407 31.4858 33.7827 31.8253 37.0792L32 38.7767L30.376 38.9331Z"
+        fill="#FECD03"
+      />
+    </svg>
+  );
+}
+
+function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const { label, icon: Icon, href } = item;
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3.5 py-3 text-sm transition-colors",
+        active
+          ? "bg-accent text-accent-foreground font-semibold"
+          : "text-foreground/80 hover:bg-accent/60 font-medium",
+      )}
+    >
+      <Icon
+        className={cn(
+          "size-5 shrink-0",
+          active ? "text-primary" : "text-muted-foreground",
+        )}
+      />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { data: session } = useSession();
-  const signOut = useSignOut();
-
-  const user = session?.user;
-  const displayName = user?.name || user?.email || "Admin";
-
-  const handleSignOut = () => {
-    if (signOut.isPending) return;
-    signOut.mutate(undefined, { onSuccess: () => router.push("/") });
-  };
 
   return (
-    <aside className="bg-lawn-bg-2 hidden w-72 shrink-0 flex-col rounded-xl shadow-[0px_0px_12px_2px_rgba(116,116,116,0.1)] lg:flex">
-      <Link href="/" className="flex h-22 shrink-0 items-center gap-2 px-5">
-        <Image src="/landing/logo-mark.svg" alt="" width={32} height={39} />
-        <span className="text-lawn-text-primary font-heading text-[22px] font-semibold tracking-tight">
+    <aside className="bg-sidebar sticky top-6 hidden h-[calc(100vh-3rem)] w-[264px] shrink-0 flex-col rounded-xl shadow-[0px_0px_12px_2px_rgba(116,116,116,0.1)] lg:flex">
+      {/* Brand */}
+      <Link href="/admin" className="flex items-center gap-2.5 px-6 py-6">
+        <LogoMark />
+        <span className="text-[19px] font-extrabold tracking-[-0.02em]">
           LawnLove
-        </span>
-        <span className="bg-lawn-badge-bg text-lawn-primary ml-1 rounded-md px-2 py-0.5 text-xs font-semibold tracking-tight">
-          Admin
         </span>
       </Link>
 
-      <nav className="flex flex-1 flex-col gap-2 px-5 pt-6">
-        {NAV_ITEMS.map(({ label, icon: Icon, href }) => {
-          const active = isActive(pathname, href);
-          return (
-            <Link
-              key={label}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={itemClasses(active)}
-            >
-              <Icon className="size-7 shrink-0" strokeWidth={active ? 2 : 1.75} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 py-2">
+        {NAV.map((item) => (
+          <NavLink key={item.label} item={item} active={isActive(pathname, item.href)} />
+        ))}
       </nav>
 
-      <div className="mx-5 mt-4 mb-6 flex items-center gap-2.5 rounded-[10px] p-3 shadow-[0px_0px_16px_2px_rgba(25,81,52,0.1)]">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <UserAvatar
-            name={user?.name}
-            email={user?.email}
-            image={user?.image}
-            className="size-10"
-            textClassName="text-[19px]"
-            sizes="40px"
-          />
+      {/* Account — static placeholder; wire to useSession() when going live. */}
+      <div className="p-4">
+        <div className="flex items-center gap-3 rounded-[10px] px-3 py-3 shadow-[0px_0px_16px_2px_rgba(25,81,52,0.1)]">
+          <span className="bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold">
+            JR
+          </span>
           <div className="min-w-0 flex-1">
-            <p className="text-lawn-text-primary truncate text-base font-semibold tracking-tight">
-              {displayName}
-            </p>
-            {user?.email && (
-              <p className="text-lawn-text-tertiary truncate text-base font-medium tracking-tight">
-                {user.email}
-              </p>
-            )}
+            <p className="truncate text-sm font-semibold">Jordan Rivera</p>
+            <p className="text-muted-foreground truncate text-xs">jordan@gmail.com</p>
           </div>
+          <button
+            type="button"
+            aria-label="Log out"
+            className="text-muted-foreground hover:bg-accent flex shrink-0 rounded-lg p-1.5 transition-colors"
+          >
+            <LogOut className="size-5" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={signOut.isPending}
-          aria-label="Log out"
-          className="text-lawn-text-secondary hover:text-lawn-primary shrink-0 transition-colors disabled:opacity-50"
-        >
-          <LogOut className="size-6" strokeWidth={1.75} />
-        </button>
       </div>
     </aside>
   );

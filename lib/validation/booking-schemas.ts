@@ -19,20 +19,10 @@ export const addressStepSchema = z.object({
 
 export type AddressStepValues = z.infer<typeof addressStepSchema>;
 
-export const frequencySchema = z.enum(["weekly", "biweekly", "monthly", "oneTime"]);
-
 export const scheduleStepSchema = z.object({
-  frequency: frequencySchema,
+  planId: z.string().trim().min(1, "Select a plan."),
   date: z.string().trim().min(1, "Select a preferred date."),
   timeSlot: z.string().trim().min(1, "Select a time slot."),
 });
 
 export type ScheduleStepValues = z.infer<typeof scheduleStepSchema>;
-
-// Card details are collected and validated by Stripe Elements, so the only
-// field we own here is the "save card" preference.
-export const paymentStepSchema = z.object({
-  saveCard: z.boolean(),
-});
-
-export type PaymentStepValues = z.infer<typeof paymentStepSchema>;

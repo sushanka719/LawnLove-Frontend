@@ -4,16 +4,37 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Presentational switch. Toggles its own local state on click (no persistence
- * yet) so the control feels live in the static dashboard. */
+/**
+ * A switch that works either controlled or uncontrolled.
+ *
+ * - Pass `checked` + `onChange` to control it (persisted preferences).
+ * - Omit both and it manages its own state, seeded from `defaultOn`.
+ * - `disabled` dims the control and blocks interaction (e.g. a not-yet-shipped
+ *   channel).
+ */
 export function Toggle({
   defaultOn = false,
+  checked,
+  onChange,
+  disabled = false,
   label,
 }: {
   defaultOn?: boolean;
+  checked?: boolean;
+  onChange?: (next: boolean) => void;
+  disabled?: boolean;
   label?: string;
 }) {
-  const [on, setOn] = useState(defaultOn);
+  const isControlled = checked !== undefined;
+  const [internalOn, setInternalOn] = useState(defaultOn);
+  const on = isControlled ? checked : internalOn;
+
+  const handleClick = () => {
+    if (disabled) return;
+    const next = !on;
+    if (!isControlled) setInternalOn(next);
+    onChange?.(next);
+  };
 
   return (
     <button
@@ -21,10 +42,12 @@ export function Toggle({
       role="switch"
       aria-checked={on}
       aria-label={label}
-      onClick={() => setOn((v) => !v)}
+      disabled={disabled}
+      onClick={handleClick}
       className={cn(
         "relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors",
         on ? "bg-lawn-primary-light" : "bg-[#cecece]",
+        disabled && "cursor-not-allowed opacity-50",
       )}
     >
       <span

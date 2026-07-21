@@ -16,7 +16,9 @@ const PAGE_SIZE = 10;
 
 const FILTERS: { label: string; value: BookingStatus | "all" }[] = [
   { label: "All", value: "all" },
-  { label: "Scheduled", value: "scheduled" },
+  { label: "Pending", value: "pendingPayment" },
+  { label: "Active", value: "active" },
+  { label: "Past due", value: "pastDue" },
   { label: "Completed", value: "completed" },
   { label: "Cancelled", value: "cancelled" },
 ];

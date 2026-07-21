@@ -39,6 +39,8 @@ export type AdminUserListItem = {
   email: string;
   role: AdminRole;
   banned: boolean;
+  // Set when the customer has requested account deletion (soft delete).
+  deletionScheduledAt: string | null;
   payoutsEnabled: boolean;
   createdAt: string;
   bookingsCount: number;
@@ -64,6 +66,8 @@ export type AdminUserDetail = {
   banned: boolean;
   banReason: string | null;
   banExpires: string | null;
+  deletionRequestedAt: string | null;
+  deletionScheduledAt: string | null;
   stripeConnectAccountId: string | null;
   payoutsEnabled: boolean;
   createdAt: string;
