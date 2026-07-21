@@ -28,3 +28,32 @@ export function computeQuote(areaSqFt: number, frequency: Frequency) {
   const totalPerVisit = Math.round(subtotal * (1 - discountPct));
   return { subtotal, discountPct, totalPerVisit };
 }
+
+// ---- Plan-based pricing (base + area surcharge) --------------------------
+// Mirror of LawnBackend/src/booking/pricing.ts. All amounts here are in CENTS
+// (matching the Plan model). The server recomputes and is authoritative; this
+// is display-only. Keep in sync with the backend copy.
+
+type PlanTier = { minSqFt: number; maxSqFt: number | null; surcharge: number };
+
+// Surcharge (cents) for the half-open bracket [minSqFt, maxSqFt) the area falls
+// into; the top tier has maxSqFt === null. 0 if below the first bracket.
+export function surchargeForArea(tiers: PlanTier[], areaSqFt: number): number {
+  const match = [...tiers]
+    .sort((a, b) => a.minSqFt - b.minSqFt)
+    .find(
+      (t) =>
+        areaSqFt >= t.minSqFt && (t.maxSqFt == null || areaSqFt < t.maxSqFt),
+    );
+  return match ? match.surcharge : 0;
+}
+
+// Final per-visit quote in CENTS for a plan at a given (estimated) area.
+export function computePlanQuote(
+  plan: { basePrice: number; areaTiers: PlanTier[] },
+  estimatedAreaSqFt: number,
+) {
+  const basePrice = plan.basePrice;
+  const areaSurcharge = surchargeForArea(plan.areaTiers, estimatedAreaSqFt);
+  return { basePrice, areaSurcharge, totalPerVisit: basePrice + areaSurcharge };
+}

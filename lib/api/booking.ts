@@ -2,37 +2,23 @@ import type { JobStatus } from "@/lib/api/agent";
 import { http } from "@/lib/api/http";
 import type { Frequency } from "@/lib/pricing";
 
-export type SetupIntentResponse = {
-  clientSecret: string;
-  customerId: string;
-};
-
-export function createSetupIntent() {
-  return http.post<SetupIntentResponse>("/bookings/setup-intent");
-}
-
 export type CreateBookingPayload = {
   phone: string;
   address: string;
   lat: number | null;
   lng: number | null;
   boundary: { lat: number; lng: number }[];
-  frequency: Frequency;
+  planId: string;
   date: string;
   timeSlot: string;
-  paymentMethodId: string;
-  saveCard: boolean;
 };
 
+// The booking is created as `pendingPayment`; the client secret drives the
+// embedded Payment Element, and the webhook flips the booking to `active`.
 export type CreateBookingResponse = {
-  id: string;
-  estimatedAreaSqFt: number;
-  subtotal: number;
-  discountPct: number;
-  totalPerVisit: number;
-  frequency: Frequency;
-  scheduleDate: string;
-  timeSlot: string;
+  bookingId: string;
+  clientSecret: string;
+  amount: number; // cents
 };
 
 export function createBooking(payload: CreateBookingPayload) {
@@ -41,7 +27,12 @@ export function createBooking(payload: CreateBookingPayload) {
 
 // ---- Bookings list + detail (dashboard) ----
 
-export type BookingStatus = "scheduled" | "cancelled" | "completed";
+export type BookingStatus =
+  | "pendingPayment"
+  | "active"
+  | "pastDue"
+  | "cancelled"
+  | "completed";
 
 export type Paginated<T> = {
   items: T[];
@@ -69,6 +60,15 @@ export function getBookings(page = 1, pageSize = 10) {
   return http.get<Paginated<BookingListItem>>(
     `/bookings?page=${page}&pageSize=${pageSize}`,
   );
+}
+
+// A current recurring plan (active/past-due subscription) for the Settings
+// "Plan" section. Same shape as a booking list row; the endpoint returns an
+// unpaginated (capped) array so all of a customer's plans arrive at once.
+export type CurrentPlan = BookingListItem;
+
+export function getCurrentPlans() {
+  return http.get<CurrentPlan[]>("/bookings/current-plans");
 }
 
 export type BookingJobSummary = {

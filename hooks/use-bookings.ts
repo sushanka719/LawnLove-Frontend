@@ -2,11 +2,17 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import { getBooking, getBookings, getInvoices } from "@/lib/api/booking";
+import {
+  getBooking,
+  getBookings,
+  getCurrentPlans,
+  getInvoices,
+} from "@/lib/api/booking";
 
 export const bookingsQueryKey = (page: number, pageSize: number) =>
   ["bookings", "list", page, pageSize] as const;
 export const bookingQueryKey = (id: string) => ["bookings", id] as const;
+export const currentPlansQueryKey = ["bookings", "current-plans"] as const;
 export const invoicesQueryKey = (page: number, pageSize: number) =>
   ["invoices", "list", page, pageSize] as const;
 
@@ -17,6 +23,14 @@ export function useBookings(page: number, pageSize: number) {
     queryKey: bookingsQueryKey(page, pageSize),
     queryFn: () => getBookings(page, pageSize),
     placeholderData: keepPreviousData,
+  });
+}
+
+// The customer's current recurring plans (active/past-due subscriptions).
+export function useCurrentPlans() {
+  return useQuery({
+    queryKey: currentPlansQueryKey,
+    queryFn: getCurrentPlans,
   });
 }
 

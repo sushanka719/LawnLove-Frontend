@@ -1,14 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 
 import { Calendar } from "@/components/booking/calendar";
 import { MeasuredAreaCard } from "@/components/booking/measured-area-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePlans } from "@/hooks/use-plans";
+import type { Plan } from "@/lib/api/plans";
 import { BOOKING_STEPS } from "@/lib/booking-steps";
-import { cn } from "@/lib/utils";
-import { computeQuote, FREQUENCY_LABELS, type Frequency } from "@/lib/pricing";
+import { formatCents } from "@/lib/jobs";
+import { computePlanQuote, type Frequency } from "@/lib/pricing";
+import { planBillingLabel } from "@/lib/plans";
 import { useBookingStore } from "@/lib/store/booking-store";
+import { cn } from "@/lib/utils";
 
 const TIME_WINDOWS = [
   { value: "morning", title: "Morning", range: "8:00 AM - 11:00 AM" },
@@ -17,32 +22,44 @@ const TIME_WINDOWS = [
   { value: "evening", title: "Evening", range: "5:00 PM - 7:00 PM" },
 ] as const;
 
-const FREQUENCY_ORDER: Frequency[] = ["weekly", "biweekly", "monthly", "oneTime"];
-
 export function ScheduleForm() {
   const router = useRouter();
   const property = useBookingStore((state) => state.property);
   const schedule = useBookingStore((state) => state.schedule);
   const setSchedule = useBookingStore((state) => state.setSchedule);
-  const pricing = useBookingStore((state) => state.pricing);
+  const plan = useBookingStore((state) => state.plan);
+  const setPlan = useBookingStore((state) => state.setPlan);
   const setPricing = useBookingStore((state) => state.setPricing);
 
-  const frequency = (pricing.frequency || "oneTime") as Frequency;
+  const { data: plans, isLoading, isError } = usePlans();
+
   const { date, timeSlot } = schedule;
+  const canContinue = Boolean(plan.planId && date && timeSlot);
 
-  const quote = useMemo(
-    () => computeQuote(property.estimatedAreaSqFt, frequency),
-    [property.estimatedAreaSqFt, frequency],
-  );
-
-  const setFrequency = (next: Frequency) => {
-    setPricing({ ...computeQuote(property.estimatedAreaSqFt, next), frequency: next });
+  const selectPlan = (selected: Plan) => {
+    const { basePrice, totalPerVisit } = computePlanQuote(
+      selected,
+      property.estimatedAreaSqFt,
+    );
+    setPlan({
+      planId: selected.id,
+      billingType: selected.billingType,
+      amountCents: totalPerVisit,
+    });
+    const frequency: Frequency =
+      selected.billingType === "oneTime"
+        ? "oneTime"
+        : (selected.interval ?? "oneTime");
+    setPricing({
+      subtotal: Math.round(basePrice / 100),
+      frequency,
+      discountPct: 0,
+      totalPerVisit: Math.round(totalPerVisit / 100),
+    });
   };
 
-  const canContinue = Boolean(frequency && date && timeSlot);
-
   const handleContinue = () => {
-    setPricing({ ...quote, frequency });
+    if (!canContinue) return;
     router.push(BOOKING_STEPS[4].path);
   };
 
@@ -65,33 +82,89 @@ export function ScheduleForm() {
                 When should we come?
               </h1>
               <p className="text-lawn-text-secondary text-base leading-6">
-                Pick how often, then choose your first visit.
+                Pick a plan, then choose your first visit.
               </p>
             </div>
           </div>
 
-          <div className="flex w-full gap-6">
-            {FREQUENCY_ORDER.map((option) => {
-              const isSelected = frequency === option;
-              const label = FREQUENCY_LABELS[option];
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setFrequency(option)}
-                  className={cn(
-                    "flex flex-1 flex-col items-center rounded-xl border px-6 py-4",
-                    isSelected
-                      ? "bg-lawn-bg-1 border-lawn-primary text-lawn-primary shadow-[0_0_0_4px_rgba(25,81,52,0.2)]"
-                      : "text-lawn-text-secondary border-[#cecece]",
-                  )}
-                >
-                  <p className="text-xl font-semibold">{label.title}</p>
-                  <p className="text-lg font-medium">{label.subtitle}</p>
-                </button>
-              );
-            })}
-          </div>
+          {isError ? (
+            <p className="text-destructive text-base">
+              We couldn&apos;t load plans. Please refresh and try again.
+            </p>
+          ) : isLoading || !plans ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-40 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : plans.length === 0 ? (
+            <p className="text-lawn-text-secondary text-base">
+              No plans are available right now. Please check back soon.
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {plans.map((option) => {
+                const isSelected = plan.planId === option.id;
+                const { totalPerVisit } = computePlanQuote(
+                  option,
+                  property.estimatedAreaSqFt,
+                );
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => selectPlan(option)}
+                    className={cn(
+                      "flex flex-col items-start gap-2 rounded-xl border p-5 text-left transition",
+                      isSelected
+                        ? "bg-lawn-bg-1 border-lawn-primary shadow-[0_0_0_4px_rgba(25,81,52,0.2)]"
+                        : "border-[#cecece] hover:border-lawn-primary/50",
+                    )}
+                  >
+                    <div className="flex w-full items-start justify-between gap-2">
+                      <div>
+                        <p
+                          className={cn(
+                            "text-xl font-semibold",
+                            isSelected
+                              ? "text-lawn-primary"
+                              : "text-lawn-text-primary",
+                          )}
+                        >
+                          {option.name}
+                        </p>
+                        <p className="text-lawn-text-secondary text-sm font-medium">
+                          {planBillingLabel(option)}
+                        </p>
+                      </div>
+                      <p className="text-lawn-primary shrink-0 text-lg font-semibold">
+                        {formatCents(totalPerVisit)}
+                        {option.billingType === "recurring" ? (
+                          <span className="text-lawn-text-tertiary text-sm font-medium">
+                            {" "}
+                            /visit
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                    {option.features.length > 0 && (
+                      <ul className="flex flex-col gap-1">
+                        {option.features.map((feature) => (
+                          <li
+                            key={feature}
+                            className="text-lawn-text-secondary flex items-center gap-1.5 text-sm"
+                          >
+                            <Check className="text-lawn-primary size-3.5 shrink-0" />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start">
