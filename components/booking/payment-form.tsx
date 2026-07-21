@@ -183,7 +183,15 @@ function PaymentFormBody() {
           </div>
 
           <div className="flex w-full flex-col gap-6 rounded-xl border border-[#cecece] p-6">
-            <PaymentElement options={{ layout: "tabs" }} />
+            <PaymentElement
+              options={{
+                layout: "tabs",
+                // Card only: the SetupIntent is restricted to `card`, so Link is
+                // already excluded; suppress the remaining wallets so nothing
+                // but a card can be entered/saved.
+                wallets: { applePay: "never", googlePay: "never" },
+              }}
+            />
           </div>
         </div>
 
