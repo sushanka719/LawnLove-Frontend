@@ -1,41 +1,48 @@
 "use client";
 
 import { useState } from "react";
-import { Search, UserPlus } from "lucide-react";
+import { Bell, Plus, Search } from "lucide-react";
 
 export function AdminTopbar({ onInvite }: { onInvite: () => void }) {
   const [search, setSearch] = useState("");
 
   return (
-    <header className="border-border bg-background/85 sticky top-0 z-20 flex items-center gap-6 border-b px-8 py-5 backdrop-blur">
+    <header className="flex flex-wrap items-center gap-4 pt-1">
       <div className="shrink-0">
-        <h1 className="text-[22px] font-semibold tracking-[-0.02em]">
-          Welcome back, Alex
+        <h1 className="text-primary text-[26px] leading-tight font-extrabold tracking-[-0.02em]">
+          Welcome Back!
         </h1>
-        <p className="text-muted-foreground text-[13px]">Monday, June 29, 2026</p>
+        <p className="text-muted-foreground text-sm">Monday, June 29, 2026</p>
       </div>
 
-      <div className="relative mx-auto hidden max-w-[520px] flex-1 md:block">
-        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 size-[17px] -translate-y-1/2" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search agents, bookings, customers…"
-          className="border-input bg-background focus:border-ring h-11 w-full rounded-[10px] border pr-11 pl-10 text-sm outline-none"
-        />
-        <span className="text-muted-foreground border-border absolute top-1/2 right-3 -translate-y-1/2 rounded-md border px-1.5 py-0.5 font-mono text-[11px]">
-          ⌘K
-        </span>
-      </div>
+      <div className="ml-auto flex items-center gap-3 md:gap-4">
+        <div className="relative hidden sm:block">
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search..."
+            className="border-border bg-card text-foreground placeholder:text-muted-foreground focus:border-primary/50 h-12 w-[240px] rounded-[10px] border pr-4 pl-11 text-sm outline-none transition-colors lg:w-[380px]"
+          />
+        </div>
 
-      <button
-        type="button"
-        onClick={onInvite}
-        className="bg-primary text-primary-foreground hover:bg-primary/90 ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-[10px] px-[18px] text-sm font-medium transition-colors md:ml-0"
-      >
-        <UserPlus className="size-[17px]" />
-        Invite Agent
-      </button>
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="border-border bg-card text-muted-foreground hover:text-foreground flex size-12 shrink-0 items-center justify-center rounded-[10px] border transition-colors"
+        >
+          <Bell className="size-[22px]" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onInvite}
+          className="lawn-gradient-btn inline-flex h-12 shrink-0 items-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-[0px_5px_10px_0px_rgba(25,81,52,0.25)] transition-transform active:scale-[0.98]"
+        >
+          <Plus className="size-[18px]" />
+          Invite agent
+        </button>
+      </div>
     </header>
   );
 }
