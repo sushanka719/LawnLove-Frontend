@@ -1,10 +1,6 @@
-import { Plus } from "lucide-react";
-
+import { AddAddressButton } from "@/components/dashboard/add-address-button";
 import { AddressList } from "@/components/dashboard/address-list";
-import {
-  GradientButton,
-  NotificationBell,
-} from "@/components/dashboard/dashboard-actions";
+import { NotificationBell } from "@/components/dashboard/dashboard-actions";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 
 export default function AddressPage() {
@@ -15,7 +11,7 @@ export default function AddressPage() {
       actions={
         <>
           <NotificationBell />
-          <GradientButton icon={Plus}>Add address</GradientButton>
+          <AddAddressButton />
         </>
       }
     >
