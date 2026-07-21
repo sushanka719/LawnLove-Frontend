@@ -2,13 +2,17 @@ import { cn } from "@/lib/utils";
 import type { BookingStatus } from "@/lib/api/booking";
 
 const LABELS: Record<BookingStatus, string> = {
-  scheduled: "Scheduled",
+  pendingPayment: "Pending payment",
+  active: "Active",
+  pastDue: "Past due",
   completed: "Completed",
   cancelled: "Cancelled",
 };
 
 const STYLES: Record<BookingStatus, string> = {
-  scheduled: "bg-[#dbeafe] text-[#1d4ed8]",
+  pendingPayment: "bg-[#fef3c7] text-[#b45309]",
+  active: "bg-[#dbeafe] text-[#1d4ed8]",
+  pastDue: "bg-red-100 text-red-700",
   completed: "bg-lawn-badge-bg text-lawn-primary",
   cancelled: "bg-neutral-200 text-neutral-600",
 };

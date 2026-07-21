@@ -8,14 +8,13 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import { CreditCard } from "lucide-react";
+import type { StripeElementsOptions } from "@stripe/stripe-js";
 import { toast } from "sonner";
 
 import { OrderSummarySidebar } from "@/components/booking/order-summary-sidebar";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/hooks/use-session";
-import { useCreateBooking, useSetupIntent } from "@/hooks/use-booking";
+import { useCreateBooking } from "@/hooks/use-booking";
 import { ApiError } from "@/lib/api/http";
 import { FREQUENCY_LABELS, type Frequency } from "@/lib/pricing";
 import { getStripe, STRIPE_PUBLISHABLE_KEY } from "@/lib/stripe";
@@ -55,7 +54,8 @@ function PaymentHeader() {
           Secure Payment
         </h1>
         <p className="text-lawn-text-secondary text-base leading-6">
-          Encrypted and secure. You won&apos;t be charged until your first visit.
+          Encrypted and secure. Your first payment is collected now to confirm
+          your booking.
         </p>
       </div>
     </div>
@@ -71,14 +71,12 @@ function PaymentFormBody() {
   const address = useBookingStore((state) => state.address);
   const property = useBookingStore((state) => state.property);
   const pricing = useBookingStore((state) => state.pricing);
+  const plan = useBookingStore((state) => state.plan);
   const schedule = useBookingStore((state) => state.schedule);
-  const storedPayment = useBookingStore((state) => state.payment);
-  const setStoredPayment = useBookingStore((state) => state.setPayment);
 
   const setConfirmation = useConfirmationStore((state) => state.setConfirmation);
 
   const createBooking = useCreateBooking();
-  const [saveCard, setSaveCard] = useState(storedPayment.saveCard);
   const [submitting, setSubmitting] = useState(false);
 
   const frequency = (pricing.frequency || "oneTime") as Frequency;
@@ -92,52 +90,52 @@ function PaymentFormBody() {
     if (!stripe || !elements || submitting) return;
 
     setSubmitting(true);
-    setStoredPayment({ saveCard });
-
     try {
-      const { error, setupIntent } = await stripe.confirmSetup({
-        elements,
-        redirect: "if_required",
-        confirmParams: {
-          return_url: `${window.location.origin}/booking/confirmed`,
-        },
-      });
-
-      if (error) {
-        toast.error(error.message ?? "We couldn't verify your card. Please try again.");
+      // Validate the Element before creating the booking / payment intent.
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        toast.error(
+          submitError.message ?? "Please check your card details and try again.",
+        );
         return;
       }
 
-      const paymentMethod = setupIntent?.payment_method;
-      const paymentMethodId =
-        typeof paymentMethod === "string" ? paymentMethod : paymentMethod?.id;
-
-      if (!paymentMethodId) {
-        toast.error("We couldn't confirm your card. Please try again.");
-        return;
-      }
-
+      // Create the booking (pendingPayment) and get the client secret.
       const booking = await createBooking.mutateAsync({
         phone: address.phoneNumber,
         address: address.address,
         lat: address.lat,
         lng: address.lng,
         boundary: property.boundary,
-        frequency,
+        planId: plan.planId,
         date: schedule.date,
         timeSlot: schedule.timeSlot,
-        paymentMethodId,
-        saveCard,
       });
 
-      // Snapshot the details for the confirmation page. The booking store is
-      // cleared on the confirmation page (see BookingConfirmed), not here: if we
-      // reset it now, the route guard would see an empty store while we're still
-      // on /booking/payment and race us back to the address step before the
-      // navigation below lands.
+      // Charge now. redirect:'if_required' keeps card/Link inline (no redirect).
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        clientSecret: booking.clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/booking/confirmed`,
+        },
+        redirect: "if_required",
+      });
+
+      if (confirmError) {
+        toast.error(
+          confirmError.message ??
+            "We couldn't complete your payment. Please try again.",
+        );
+        return;
+      }
+
+      // Snapshot for the confirmation page. The booking store is cleared on the
+      // confirmation page (not here) to avoid the route guard racing us back to
+      // the address step before the navigation lands.
       setConfirmation({
-        bookingId: `LL-${booking.id.slice(-6).toUpperCase()}`,
-        rawId: booking.id,
+        bookingId: `LL-${booking.bookingId.slice(-6).toUpperCase()}`,
+        rawId: booking.bookingId,
         address: address.address,
         date: schedule.date,
         timeSlot: schedule.timeSlot,
@@ -145,11 +143,11 @@ function PaymentFormBody() {
 
       router.push("/booking/confirmed");
     } catch (err) {
-      const message =
+      toast.error(
         err instanceof ApiError
           ? err.message
-          : "We couldn't complete your booking. Please try again.";
-      toast.error(message);
+          : "We couldn't complete your booking. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -165,47 +163,8 @@ function PaymentFormBody() {
       <div className={CARD_SHELL}>
         <PaymentHeader />
 
-        <div className="flex w-full flex-col gap-4">
-          <div className="bg-lawn-bg-2 flex w-full items-center justify-between rounded-xl p-6 shadow-[0px_4px_8px_0px_rgba(74,74,74,0.14)]">
-            <div className="flex items-center gap-3">
-              <span className="border-lawn-primary flex size-5 items-center justify-center rounded-full border">
-                <span className="bg-lawn-primary size-2.5 rounded-full" />
-              </span>
-              <CreditCard className="text-lawn-text-secondary size-6" />
-              <p className="text-lawn-text-secondary text-xl font-medium">
-                Credit or debit card
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-14 rounded-md bg-[#191f77]" />
-              <div className="h-7 w-14 rounded-md bg-red-600" />
-            </div>
-          </div>
-
-          <div className="flex w-full flex-col gap-6 rounded-xl border border-[#cecece] p-6">
-            <PaymentElement
-              options={{
-                layout: "tabs",
-                // Card only: the SetupIntent is restricted to `card`, so Link is
-                // already excluded; suppress the remaining wallets so nothing
-                // but a card can be entered/saved.
-                wallets: { applePay: "never", googlePay: "never" },
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="text-lawn-text-primary flex items-center gap-2 text-base font-medium">
-            <Checkbox
-              checked={saveCard}
-              onCheckedChange={(checked) => setSaveCard(checked === true)}
-            />
-            Save this card securely for faster checkout next time.
-          </label>
-          <p className="text-lawn-text-primary text-base font-medium">
-            Your card is encrypted and can be removed anytime.
-          </p>
+        <div className="flex w-full flex-col gap-6 rounded-xl border border-[#cecece] p-6">
+          <PaymentElement options={{ layout: "tabs" }} />
         </div>
       </div>
 
@@ -252,9 +211,7 @@ function PaymentStatePanel({ children }: { children: React.ReactNode }) {
 export function PaymentForm() {
   const router = useRouter();
   const { data: session, isLoading: sessionLoading } = useSession();
-  const authenticated = !!session;
-
-  const setupIntent = useSetupIntent(authenticated);
+  const plan = useBookingStore((state) => state.plan);
 
   // Booking submission requires a signed-in session — bounce guests to login
   // and bring them back to this step afterwards.
@@ -263,6 +220,14 @@ export function PaymentForm() {
       router.replace("/login?next=/booking/payment");
     }
   }, [sessionLoading, session, router]);
+
+  // A plan must have been chosen at the schedule step to build the Payment
+  // Element (its mode + amount come from the selection).
+  useEffect(() => {
+    if (!plan.planId || plan.amountCents <= 0) {
+      router.replace("/booking/schedule");
+    }
+  }, [plan.planId, plan.amountCents, router]);
 
   if (sessionLoading || !session) {
     return (
@@ -284,7 +249,7 @@ export function PaymentForm() {
     );
   }
 
-  if (setupIntent.isLoading) {
+  if (!plan.planId || plan.amountCents <= 0) {
     return (
       <PaymentStatePanel>
         <Skeleton className="h-24 w-full rounded-xl" />
@@ -293,24 +258,18 @@ export function PaymentForm() {
     );
   }
 
-  if (setupIntent.isError || !setupIntent.data?.clientSecret) {
-    return (
-      <PaymentStatePanel>
-        <p className="text-destructive text-base">
-          We couldn&apos;t start a secure payment session. Please refresh and try again.
-        </p>
-      </PaymentStatePanel>
-    );
-  }
+  const options: StripeElementsOptions = {
+    mode: plan.billingType === "recurring" ? "subscription" : "payment",
+    amount: plan.amountCents,
+    currency: "usd",
+    // Card + Link only — matches the server-side payment_method_types so nothing
+    // else can be entered. The server list is authoritative.
+    paymentMethodTypes: ["card", "link"],
+    appearance: { theme: "stripe" },
+  };
 
   return (
-    <Elements
-      stripe={stripePromise}
-      options={{
-        clientSecret: setupIntent.data.clientSecret,
-        appearance: { theme: "stripe" },
-      }}
-    >
+    <Elements stripe={stripePromise} options={options}>
       <PaymentFormBody />
     </Elements>
   );
