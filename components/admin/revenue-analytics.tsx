@@ -1,150 +1,124 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-import { DashboardCard } from "@/components/admin/dashboard-card";
-import { Segmented } from "@/components/admin/segmented";
+import { CalendarDays } from "lucide-react";
 import {
-  CHART_MAX,
-  CHART_PERIODS,
-  CHART_SERIES,
-  MONTHS,
-  SERIES_NAMES,
-  type SeriesName,
-} from "@/components/admin/dashboard-mock";
-import { cn } from "@/lib/utils";
+  CartesianGrid,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+  type TooltipProps,
+} from "recharts";
 
-// Plot geometry (matches the source design's 800×300 viewBox).
-const X0 = 50;
-const X1 = 790;
-const Y0 = 20;
-const Y1 = 270;
+import {
+  ChartContainer,
+  ChartTooltip,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
-function buildChart(series: SeriesName) {
-  const { color, values } = CHART_SERIES[series];
-  const points = values.map((v, i) => ({
-    x: X0 + (i * (X1 - X0)) / 11,
-    y: Y1 - (v / CHART_MAX) * (Y1 - Y0),
-  }));
-  const line = points
-    .map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(" ");
-  const area = `${line} L${X1} ${Y1} L${X0} ${Y1} Z`;
-  return { color, points, line, area };
+// Two smooth 30-day series (values in whole visits). "current" = this month
+// (gold), "previous" = last month (gray). Static mock — swap for the admin API.
+const CURRENT = [
+  150, 152, 156, 150, 148, 150, 156, 164, 172, 178, 182, 188, 196, 206, 214, 222, 230,
+  238, 244, 246, 244, 238, 230, 222, 214, 208, 200, 196, 190, 186,
+];
+const PREVIOUS = [
+  176, 182, 188, 200, 210, 214, 212, 206, 198, 190, 182, 176, 172, 168, 164, 160, 156,
+  152, 150, 152, 156, 162, 168, 172, 176, 178, 180, 180, 178, 176,
+];
+
+const DATA = CURRENT.map((c, i) => ({
+  day: i + 1,
+  current: c * 1_000_000,
+  previous: PREVIOUS[i] * 1_000_000,
+}));
+
+const chartConfig = {
+  current: { label: "This Month", color: "var(--chart-1)" },
+  previous: { label: "Previous Month", color: "#c9c9c9" },
+} satisfies ChartConfig;
+
+function RevenueTooltip({ active, payload, label }: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null;
+  const current = payload.find((p) => p.dataKey === "current") ?? payload[0];
+  return (
+    <div className="border-border bg-card rounded-xl border px-3.5 py-2.5 shadow-lg">
+      <p className="text-muted-foreground text-[11px]">This Month</p>
+      <p className="text-foreground text-base font-bold tabular-nums">
+        {Number(current.value).toLocaleString()}
+      </p>
+      <p className="text-muted-foreground text-[11px]">Day {label}</p>
+    </div>
+  );
 }
 
-const GRID_LINES = [20, 82, 145, 207, 270];
-const Y_LABELS = ["$341k", "$256k", "$170k", "$85k", "$0"];
-
 export function RevenueAnalytics() {
-  const [period, setPeriod] = useState<(typeof CHART_PERIODS)[number]>("Monthly");
-  const [series, setSeries] = useState<SeriesName>("Revenue");
-  const chart = useMemo(() => buildChart(series), [series]);
-
   return (
-    <DashboardCard className="p-6">
+    <div className="bg-card rounded-xl p-6 shadow-[0px_4px_8px_0px_rgba(74,74,74,0.1)]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-[17px] font-semibold tracking-[-0.01em]">
-            Revenue Analytics
-          </div>
-          <div className="text-muted-foreground mt-0.5 text-[13px]">
-            Platform performance over time
-          </div>
+          <h2 className="text-lg font-bold tracking-[-0.01em]">Revenue Analysis</h2>
+          <p className="text-muted-foreground text-sm">Platform performance over time</p>
         </div>
-        <Segmented
-          options={CHART_PERIODS}
-          value={period}
-          onChange={setPeriod}
-          size="sm"
-        />
-      </div>
-
-      {/* Series legend / toggles */}
-      <div className="mt-[18px] mb-2 flex flex-wrap gap-2.5">
-        {SERIES_NAMES.map((name) => {
-          const active = name === series;
-          const color = CHART_SERIES[name].color;
-          return (
-            <button
-              key={name}
-              type="button"
-              onClick={() => setSeries(name)}
-              className={cn(
-                "inline-flex cursor-pointer items-center gap-[7px] rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                !active && "border-border bg-card text-muted-foreground",
-              )}
-              style={
-                active
-                  ? { borderColor: color, background: color, color: "#fff" }
-                  : undefined
-              }
-            >
-              <span
-                className="size-2 rounded-full"
-                style={{ background: active ? "#fff" : color }}
-              />
-              {name}
-            </button>
-          );
-        })}
-      </div>
-
-      <svg
-        viewBox="0 0 800 300"
-        width="100%"
-        height="300"
-        className="block overflow-visible"
-      >
-        {GRID_LINES.map((y) => (
-          <line key={y} x1={X0} y1={y} x2={X1} y2={y} stroke="var(--border)" />
-        ))}
-        {Y_LABELS.map((label, i) => (
-          <text
-            key={label}
-            x="0"
-            y={GRID_LINES[i] + 4}
-            fill="var(--muted-foreground)"
-            fontSize="11"
+        <div className="flex items-center gap-3">
+          <span className="text-muted-foreground hidden text-xs sm:inline">
+            Previous Month
+          </span>
+          <button
+            type="button"
+            className="border-border bg-card text-foreground inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium"
           >
-            {label}
-          </text>
-        ))}
+            March 2020
+            <CalendarDays className="text-muted-foreground size-4" />
+          </button>
+        </div>
+      </div>
 
-        <path d={chart.area} fill={chart.color} opacity="0.1" />
-        <path
-          d={chart.line}
-          fill="none"
-          stroke={chart.color}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {chart.points.map((p, i) => (
-          <circle
-            key={i}
-            cx={p.x}
-            cy={p.y}
-            r="3.5"
-            fill="var(--card)"
-            stroke={chart.color}
-            strokeWidth="2"
+      <p className="text-muted-foreground mt-6 text-sm font-medium">Total visits</p>
+
+      <ChartContainer config={chartConfig} className="mt-2 aspect-auto h-[300px] w-full">
+        <LineChart data={DATA} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
+          <CartesianGrid vertical={false} stroke="var(--border)" />
+          <XAxis
+            dataKey="day"
+            type="number"
+            domain={[1, 30]}
+            ticks={[1, 5, 10, 15, 20, 25, 30]}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={10}
           />
-        ))}
-
-        {MONTHS.map((label, i) => (
-          <text
-            key={label}
-            x={(X0 + (i * 740) / 11).toFixed(1)}
-            y="292"
-            fill="var(--muted-foreground)"
-            fontSize="11"
-            textAnchor="middle"
-          >
-            {label}
-          </text>
-        ))}
-      </svg>
-    </DashboardCard>
+          <YAxis
+            domain={[140_000_000, 260_000_000]}
+            ticks={[140_000_000, 180_000_000, 220_000_000, 260_000_000]}
+            tickFormatter={(v) => `${v / 1_000_000}M`}
+            tickLine={false}
+            axisLine={false}
+            width={44}
+          />
+          <ChartTooltip
+            cursor={{ stroke: "var(--chart-1)", strokeDasharray: "4 4" }}
+            content={<RevenueTooltip />}
+          />
+          <Line
+            dataKey="previous"
+            type="natural"
+            stroke="var(--color-previous)"
+            strokeWidth={3}
+            dot={false}
+            isAnimationActive={false}
+          />
+          <Line
+            dataKey="current"
+            type="natural"
+            stroke="var(--color-current)"
+            strokeWidth={3}
+            dot={false}
+            activeDot={{ r: 5, fill: "var(--chart-1)", stroke: "#ffffff", strokeWidth: 3 }}
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ChartContainer>
+    </div>
   );
 }
