@@ -6,7 +6,6 @@ import {
   Calendar,
   CreditCard,
   LayoutGrid,
-  LogOut,
   MapPin,
   ScrollText,
   Settings,
@@ -15,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { SidebarAccountCard } from "@/components/dashboard/sidebar-account-card";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -106,36 +106,12 @@ export function AdminSidebar() {
         ))}
       </nav>
 
-      {/* Account — static placeholder; wire to useSession() when going live. */}
-      <div className="p-4">
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-[10px] px-3 py-3 shadow-[0px_0px_16px_2px_rgba(25,81,52,0.1)]",
-            isActive(pathname, "/admin/profile") && "bg-accent",
-          )}
-        >
-          <Link
-            href="/admin/profile"
-            className="flex min-w-0 flex-1 items-center gap-3"
-            aria-current={isActive(pathname, "/admin/profile") ? "page" : undefined}
-          >
-            <span className="bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold">
-              JR
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">Jordan Rivera</p>
-              <p className="text-muted-foreground truncate text-xs">jordan@gmail.com</p>
-            </div>
-          </Link>
-          <button
-            type="button"
-            aria-label="Log out"
-            className="text-muted-foreground hover:bg-accent flex shrink-0 rounded-lg p-1.5 transition-colors"
-          >
-            <LogOut className="size-5" />
-          </button>
-        </div>
-      </div>
+      {/* Signed-in account — session-driven, with working sign-out. */}
+      <SidebarAccountCard
+        profileHref="/admin/profile"
+        active={isActive(pathname, "/admin/profile")}
+        className="m-4"
+      />
     </aside>
   );
 }
