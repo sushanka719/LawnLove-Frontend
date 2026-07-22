@@ -7,7 +7,7 @@ import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { BookingStatus } from "@/components/admin/booking-status";
 import { InviteAgentModal } from "@/components/admin/invite-agent-modal";
 import { KpiCards } from "@/components/admin/kpi-cards";
-import { PastVisit } from "@/components/admin/past-visit";
+import { RecentBookings } from "@/components/admin/recent-bookings";
 import { RevenueAnalytics } from "@/components/admin/revenue-analytics";
 
 export function AdminDashboard() {
@@ -40,7 +40,7 @@ export function AdminDashboard() {
           <BookingStatus />
         </div>
 
-        <PastVisit />
+        <RecentBookings />
       </main>
 
       <InviteAgentModal

@@ -2,21 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Calendar,
   CircleQuestionMark,
   CreditCard,
   LayoutGrid,
-  LogOut,
   MapPin,
   Notebook,
   Settings,
   type LucideIcon,
 } from "lucide-react";
 
-import { UserAvatar } from "@/components/dashboard/user-avatar";
-import { useSession, useSignOut } from "@/hooks/use-session";
+import { SidebarAccountCard } from "@/components/dashboard/sidebar-account-card";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -52,19 +50,6 @@ function itemClasses(active: boolean) {
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { data: session } = useSession();
-  const signOut = useSignOut();
-
-  const user = session?.user;
-  const displayName = user?.name || user?.email || "Your account";
-
-  const handleSignOut = () => {
-    if (signOut.isPending) return;
-    signOut.mutate(undefined, {
-      onSuccess: () => router.push("/"),
-    });
-  };
 
   return (
     <aside className="bg-lawn-bg-2 hidden w-72 shrink-0 flex-col rounded-xl shadow-[0px_0px_12px_2px_rgba(116,116,116,0.1)] lg:flex">
@@ -105,41 +90,11 @@ export function DashboardSidebar() {
       </nav>
 
       {/* User card */}
-      <div className="mx-5 mt-4 mb-6 flex items-center gap-2.5 rounded-[10px] p-3 shadow-[0px_0px_16px_2px_rgba(25,81,52,0.1)]">
-        <Link
-          href="/dashboard/profile"
-          aria-label="View profile"
-          className="flex min-w-0 flex-1 items-center gap-2.5"
-        >
-          <UserAvatar
-            name={user?.name}
-            email={user?.email}
-            image={user?.image}
-            className="size-10"
-            textClassName="text-[19px]"
-            sizes="40px"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-lawn-text-primary truncate text-base font-semibold tracking-tight">
-              {displayName}
-            </p>
-            {user?.email && (
-              <p className="text-lawn-text-tertiary truncate text-base font-medium tracking-tight">
-                {user.email}
-              </p>
-            )}
-          </div>
-        </Link>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={signOut.isPending}
-          aria-label="Log out"
-          className="text-lawn-text-secondary hover:text-lawn-primary shrink-0 transition-colors disabled:opacity-50"
-        >
-          <LogOut className="size-6" strokeWidth={1.75} />
-        </button>
-      </div>
+      <SidebarAccountCard
+        profileHref="/dashboard/profile"
+        active={isActive(pathname, "/dashboard/profile")}
+        className="mx-5 mt-4 mb-6"
+      />
     </aside>
   );
 }

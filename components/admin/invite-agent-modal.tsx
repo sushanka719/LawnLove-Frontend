@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { Send, X } from "lucide-react";
 
-import { INVITE_REGIONS } from "@/components/admin/dashboard-mock";
-import { cn } from "@/lib/utils";
+import { useInviteAgent } from "@/hooks/use-admin";
+import { ApiError } from "@/lib/api/http";
+import { emailSchema } from "@/lib/validation/auth-schemas";
 
 const FIELD =
-  "border-input bg-background focus:border-ring h-10 w-full rounded-lg border px-3 text-sm outline-none";
+  "border-input bg-background focus:border-ring h-10 w-full rounded-lg border px-3 text-sm outline-none disabled:opacity-60";
 
 export function InviteAgentModal({
   open,
@@ -20,7 +21,8 @@ export function InviteAgentModal({
 }) {
   const [email, setEmail] = useState("");
   const [business, setBusiness] = useState("");
-  const [region, setRegion] = useState<string>("Texas");
+  const [error, setError] = useState<string | null>(null);
+  const invite = useInviteAgent();
 
   // Close on Escape while open.
   useEffect(() => {
@@ -34,16 +36,46 @@ export function InviteAgentModal({
 
   if (!open) return null;
 
-  const handleSend = () => {
-    onSent(email.trim());
+  const reset = () => {
     setEmail("");
     setBusiness("");
-    setRegion("Texas");
+    setError(null);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const handleSend = async () => {
+    setError(null);
+    // Validate against the same email rule the backend enforces.
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Please enter a valid email address.");
+      return;
+    }
+    const businessName = business.trim();
+    try {
+      await invite.mutateAsync({
+        email: parsed.data,
+        businessName: businessName || undefined,
+      });
+      const sentEmail = parsed.data;
+      reset();
+      onSent(sentEmail);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not send the invite. Please try again.",
+      );
+    }
   };
 
   return (
     <div
-      onClick={onClose}
+      onClick={handleClose}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
       role="dialog"
       aria-modal="true"
@@ -62,7 +94,7 @@ export function InviteAgentModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close"
             className="text-muted-foreground hover:bg-accent flex rounded-lg p-1.5 transition-colors"
           >
@@ -73,9 +105,14 @@ export function InviteAgentModal({
         <div className="mt-5">
           <label className="mb-1.5 block text-[13px] font-medium">Email address</label>
           <input
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleSend();
+            }}
             placeholder="agent@example.com"
+            disabled={invite.isPending}
             className={FIELD}
           />
         </div>
@@ -85,50 +122,37 @@ export function InviteAgentModal({
           <input
             value={business}
             onChange={(e) => setBusiness(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleSend();
+            }}
             placeholder="e.g. GreenBlade Lawn Care"
+            disabled={invite.isPending}
             className={FIELD}
           />
         </div>
 
-        <div className="mt-4">
-          <label className="mb-1.5 block text-[13px] font-medium">Service region</label>
-          <div className="flex flex-wrap gap-2">
-            {INVITE_REGIONS.map((option) => {
-              const active = option === region;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setRegion(option)}
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
-                    active
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-foreground hover:bg-accent",
-                  )}
-                >
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {error && (
+          <p className="text-destructive mt-4 text-[13px]" role="alert">
+            {error}
+          </p>
+        )}
 
         <div className="mt-6 flex justify-end gap-2.5">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="border-border bg-background hover:bg-accent h-10 rounded-lg border px-4 text-sm font-medium transition-colors"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={handleSend}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-10 items-center gap-2 rounded-lg px-[18px] text-sm font-medium transition-colors"
+            onClick={() => void handleSend()}
+            disabled={invite.isPending}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-10 items-center gap-2 rounded-lg px-[18px] text-sm font-medium transition-colors disabled:opacity-60"
           >
             <Send className="size-[15px]" />
-            Send Invite
+            {invite.isPending ? "Sending..." : "Send Invite"}
           </button>
         </div>
       </div>

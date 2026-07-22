@@ -32,7 +32,7 @@ const KPIS: Kpi[] = [
     id: "bookings",
     label: "Bookings",
     value: "3,854",
-    sub: "64 completed today",
+    sub: "64 completion today",
     delta: "8.1%",
     up: true,
     color: "var(--chart-5)",
@@ -95,9 +95,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
     <div className="bg-card rounded-xl p-6 shadow-[0px_4px_8px_0px_rgba(74,74,74,0.1)]">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[15px] font-semibold">{kpi.label}</span>
-        <span className="text-[22px] font-extrabold tracking-[-0.02em]">
-          {kpi.value}
-        </span>
+        <span className="text-[22px] font-extrabold tracking-[-0.02em]">{kpi.value}</span>
       </div>
       <div className="mt-1 flex items-center justify-between gap-3">
         <span className="text-muted-foreground text-xs">{kpi.sub}</span>
