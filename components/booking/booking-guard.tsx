@@ -1,21 +1,40 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { BOOKING_STEPS } from "@/lib/booking-steps";
 import { useBookingStore } from "@/lib/store/booking-store";
+import { useConfirmationStore } from "@/lib/store/confirmation-store";
 
-// `true` once the persisted store has rehydrated from sessionStorage on the
-// client. Built on useSyncExternalStore so it reads `false` during SSR and the
-// hydration render (matching the server), then flips to `true` — no hydration
-// mismatch, and no setState-in-effect.
-function useBookingStoreHydrated(): boolean {
+const CONFIRMED_PATH = "/booking/confirmed";
+
+// The minimal slice of a persisted zustand store the hydration hook needs.
+type PersistedStore = {
+  persist: {
+    onFinishHydration: (onChange: () => void) => () => void;
+    hasHydrated: () => boolean;
+  };
+};
+
+// `true` once the given persisted store has rehydrated from sessionStorage on
+// the client. Built on useSyncExternalStore so it reads `false` during SSR and
+// the hydration render (matching the server), then flips to `true` — no
+// hydration mismatch, and no setState-in-effect.
+function useStoreHydrated(store: PersistedStore): boolean {
   return useSyncExternalStore(
-    (onChange) => useBookingStore.persist.onFinishHydration(onChange),
-    () => useBookingStore.persist.hasHydrated(),
+    (onChange) => store.persist.onFinishHydration(onChange),
+    () => store.persist.hasHydrated(),
     () => false,
   );
+}
+
+// Stripe appends these to `return_url` when a payment method redirects the
+// browser out to the provider and back (bank/wallet redirects). In that flow
+// the payment succeeded but the page we left never reached setConfirmation() —
+// so the snapshot is empty yet the arrival at /booking/confirmed is legitimate.
+function hasPaymentReturn(params: URLSearchParams): boolean {
+  return params.has("redirect_status") || params.has("payment_intent");
 }
 
 // The furthest step index the user has actually EARNED, derived from the data
@@ -42,21 +61,39 @@ function furthestAllowedIndex(state: {
 export function BookingGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const address = useBookingStore((state) => state.address);
   const property = useBookingStore((state) => state.property);
   const schedule = useBookingStore((state) => state.schedule);
+  const confirmation = useConfirmationStore((state) => state.confirmation);
 
-  // The persisted store rehydrates from sessionStorage on the client only, so
-  // on the server (and the hydration render) it holds empty values. Deciding
+  // Both persisted stores rehydrate from sessionStorage on the client only, so
+  // on the server (and the hydration render) they hold empty values. Deciding
   // before hydration would bounce a user who genuinely has data, so we gate
-  // every decision on this flag.
-  const ready = useBookingStoreHydrated();
+  // every decision on both being ready.
+  const bookingReady = useStoreHydrated(useBookingStore);
+  const confirmationReady = useStoreHydrated(useConfirmationStore);
+  const ready = bookingReady && confirmationReady;
 
   const currentIndex = BOOKING_STEPS.findIndex((step) => step.path === pathname);
   const maxIndex = furthestAllowedIndex({ address, property, schedule });
-  // Non-flow pages (currentIndex === -1, e.g. /booking/confirmed) are never gated.
-  const allowed = currentIndex === -1 || currentIndex <= maxIndex;
+
+  let allowed: boolean;
+  if (pathname === CONFIRMED_PATH) {
+    // The confirmation page is a post-booking success view, not a flow step, so
+    // the maxIndex cap doesn't apply. It's legitimate only when a booking just
+    // completed: either we snapshotted its details (inline payment) or Stripe
+    // redirected the browser back to it. Any other arrival — typing the URL, or
+    // landing mid-flow — must be bounced, both to stop skip-ahead and because
+    // the page's mount effect resets the draft (which would wipe a booking in
+    // progress).
+    allowed = confirmation !== null || hasPaymentReturn(searchParams);
+  } else {
+    // Other non-flow pages (currentIndex === -1) are never gated; flow steps
+    // are capped at the furthest step the user's data has earned.
+    allowed = currentIndex === -1 || currentIndex <= maxIndex;
+  }
 
   useEffect(() => {
     if (ready && !allowed) {
