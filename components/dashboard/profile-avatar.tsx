@@ -19,10 +19,13 @@ export function ProfileAvatar({
   name,
   email,
   image,
+  subtitle = "Manage your personal details and contact info.",
 }: {
   name: string;
   email?: string;
   image?: string | null;
+  // Secondary line under the name (e.g. "Member since : 2026 May 13").
+  subtitle?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { mutateAsync, isPending } = useUpdateAvatar();
@@ -81,7 +84,7 @@ export function ProfileAvatar({
             {name}
           </p>
           <p className="text-lawn-text-secondary text-lg font-medium tracking-tight">
-            Manage your personal details and contact info.
+            {subtitle}
           </p>
         </div>
       </div>

@@ -58,7 +58,7 @@ export const FloatingLabelField = React.forwardRef<
             setFilled(event.target.value.length > 0);
             onChange?.(event);
           }}
-          className="text-lawn-text-primary h-auto flex-1 border-0 bg-transparent p-0 text-base focus-visible:ring-0"
+          className="text-lawn-text-primary h-auto flex-1 border-0 bg-transparent p-0 text-base shadow-none focus-visible:ring-0 aria-invalid:border-0 aria-invalid:ring-0"
         />
         {floated && (
           <label

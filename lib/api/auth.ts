@@ -82,6 +82,8 @@ export type Session = {
     phoneNumber?: string | null;
     // Provided by the better-auth `admin` plugin. "user" | "agent" | "admin".
     role?: string | null;
+    // Account creation timestamp (ISO string) from the better-auth user record.
+    createdAt?: string | null;
   };
   session: {
     id: string;
@@ -124,8 +126,5 @@ export function changePassword(params: {
   newPassword: string;
   revokeOtherSessions?: boolean;
 }) {
-  return http.post<{ token: string | null }>(
-    `${AUTH_PREFIX}/change-password`,
-    params,
-  );
+  return http.post<{ token: string | null }>(`${AUTH_PREFIX}/change-password`, params);
 }
