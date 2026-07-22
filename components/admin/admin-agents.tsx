@@ -1,99 +1,355 @@
 "use client";
 
-import Link from "next/link";
-import { CheckCircle2, ClipboardList, XCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Bell, CheckCircle2, MoreHorizontal, Plus, Search } from "lucide-react";
 
-import { UserAvatar } from "@/components/dashboard/user-avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useAdminAgents } from "@/hooks/use-admin";
+import { AdminPagination } from "@/components/admin/admin-pagination";
+import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
+import { InviteAgentModal } from "@/components/admin/invite-agent-modal";
+import { cn } from "@/lib/utils";
+
+/**
+ * Super Admin → Agent screen (Figma node 1089:3891).
+ *
+ * Visual mock — the table rows are placeholder data. The admin API
+ * (`getAdminAgents`) does not yet expose Contact / Service Area / Revenue, so
+ * swap `AGENTS` for the real shape once those fields exist. The Invite agent
+ * flow IS live (wired to `InviteAgentModal` → `useInviteAgent`).
+ */
+
+type Agent = {
+  id: string;
+  name: string;
+  email: string;
+  initial: string;
+  avatarColor: string;
+  contact: string;
+  serviceArea: string;
+  bookings: string;
+  revenue: string;
+};
+
+const AGENTS: Agent[] = [
+  {
+    id: "1",
+    name: "Gavrial Carter",
+    email: "gavrial4@gmail.com",
+    initial: "G",
+    avatarColor: "#4f46e5",
+    contact: "(512) 555-5343",
+    serviceArea: "Austin Metro, TX",
+    bookings: "32",
+    revenue: "$5675",
+  },
+  {
+    id: "2",
+    name: "Raymond Patel",
+    email: "raymond@gmail.com",
+    initial: "R",
+    avatarColor: "#9333ea",
+    contact: "(512) 555-1256",
+    serviceArea: "Dallas Metro, TX",
+    bookings: "03",
+    revenue: "$110",
+  },
+  {
+    id: "3",
+    name: "Monica Walsh",
+    email: "monicaw@gmail.com",
+    initial: "M",
+    avatarColor: "#d97706",
+    contact: "(512) 236-5343",
+    serviceArea: "Phoenix Metro, AZ",
+    bookings: "12",
+    revenue: "$67",
+  },
+  {
+    id: "4",
+    name: "Daniel Foster",
+    email: "daniel@gmail.com",
+    initial: "D",
+    avatarColor: "#0d9488",
+    contact: "(512) 332-3069",
+    serviceArea: "Tampa Metro, FL",
+    bookings: "10",
+    revenue: "$789",
+  },
+  {
+    id: "5",
+    name: "Ivary Bennett",
+    email: "ivary@gmail.com",
+    initial: "I",
+    avatarColor: "#0e7490",
+    contact: "(512) 851-9652",
+    serviceArea: "Columbus Metro, OH",
+    bookings: "11",
+    revenue: "$600",
+  },
+  {
+    id: "6",
+    name: "Rachel Nguyen",
+    email: "rachel@gmail.com",
+    initial: "R",
+    avatarColor: "#ca8a04",
+    contact: "(512) 128-8521",
+    serviceArea: "Denver Metro, CO",
+    bookings: "18",
+    revenue: "$630",
+  },
+  {
+    id: "7",
+    name: "Rachel Nguyen",
+    email: "rachel@gmail.com",
+    initial: "R",
+    avatarColor: "#ca8a04",
+    contact: "(512) 128-8521",
+    serviceArea: "Denver Metro, CO",
+    bookings: "18",
+    revenue: "$630",
+  },
+  {
+    id: "8",
+    name: "Rachel Nguyen",
+    email: "rachel@gmail.com",
+    initial: "R",
+    avatarColor: "#ca8a04",
+    contact: "(512) 128-8521",
+    serviceArea: "Denver Metro, CO",
+    bookings: "18",
+    revenue: "$630",
+  },
+  {
+    id: "9",
+    name: "Marcus Lee",
+    email: "marcus@gmail.com",
+    initial: "M",
+    avatarColor: "#4f46e5",
+    contact: "(512) 447-9021",
+    serviceArea: "Seattle Metro, WA",
+    bookings: "24",
+    revenue: "$1240",
+  },
+  {
+    id: "10",
+    name: "Priya Nair",
+    email: "priya@gmail.com",
+    initial: "P",
+    avatarColor: "#9333ea",
+    contact: "(512) 660-3388",
+    serviceArea: "Charlotte Metro, NC",
+    bookings: "15",
+    revenue: "$980",
+  },
+  {
+    id: "11",
+    name: "Andre Willis",
+    email: "andre@gmail.com",
+    initial: "A",
+    avatarColor: "#0d9488",
+    contact: "(512) 219-7745",
+    serviceArea: "Atlanta Metro, GA",
+    bookings: "27",
+    revenue: "$2115",
+  },
+  {
+    id: "12",
+    name: "Sofia Ramos",
+    email: "sofia@gmail.com",
+    initial: "S",
+    avatarColor: "#d97706",
+    contact: "(512) 905-1122",
+    serviceArea: "Miami Metro, FL",
+    bookings: "09",
+    revenue: "$540",
+  },
+];
+
+const COLUMNS = ["Agent", "Contact", "Service Area", "Bookings", "Revenue"] as const;
+const PAGE_SIZE = 8;
 
 export function AdminAgents() {
-  const { data: agents, isLoading, isError } = useAdminAgents();
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  if (isError) {
-    return (
-      <p className="text-destructive text-base">
-        We couldn&apos;t load agents. Please refresh and try again.
-      </p>
-    );
-  }
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, []);
 
-  if (isLoading || !agents) {
-    return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-36 w-full rounded-2xl" />
-        ))}
-      </div>
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return AGENTS;
+    return AGENTS.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        a.email.toLowerCase().includes(q) ||
+        a.serviceArea.toLowerCase().includes(q),
     );
-  }
+  }, [query]);
 
-  if (agents.length === 0) {
-    return (
-      <p className="text-lawn-text-secondary rounded-xl border border-[#cecece]/60 px-5 py-10 text-center text-base">
-        No agents yet. Promote a user to agent from the Users tab.
-      </p>
-    );
-  }
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const current = Math.min(page, totalPages);
+  const start = (current - 1) * PAGE_SIZE;
+  const rows = filtered.slice(start, start + PAGE_SIZE);
+  const rangeStart = filtered.length === 0 ? 0 : start + 1;
+  const rangeEnd = start + rows.length;
+
+  const handleSent = (email: string) => {
+    setInviteOpen(false);
+    setToast(email ? `Invitation sent to ${email}` : "Invitation sent");
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2600);
+  };
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {agents.map((a) => (
-        <div
-          key={a.id}
-          className="bg-lawn-bg-2 flex flex-col gap-4 rounded-2xl border border-[#cecece]/50 p-5 shadow-[0px_4px_16px_0px_rgba(74,74,74,0.08)]"
-        >
-          <div className="flex items-center gap-3">
-            <UserAvatar
-              name={a.name}
-              email={a.email}
-              className="size-11"
-              textClassName="text-lg"
-              sizes="44px"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-lawn-text-primary truncate text-base font-semibold tracking-tight">
-                {a.name || "—"}
-              </p>
-              <p className="text-lawn-text-secondary truncate text-sm tracking-tight">
-                {a.email}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {a.payoutsEnabled ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-lawn-badge-bg px-2.5 py-0.5 text-xs font-semibold text-lawn-primary">
-                <CheckCircle2 className="size-3.5" /> Payouts enabled
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs font-semibold text-neutral-600">
-                <XCircle className="size-3.5" />
-                {a.onboarded ? "Onboarding incomplete" : "Not onboarded"}
-              </span>
-            )}
-            <span className="text-lawn-text-tertiary inline-flex items-center gap-1 text-xs font-medium tracking-tight">
-              <ClipboardList className="size-3.5" />
-              {a.activeJobs} active · {a.totalJobs} total
-            </span>
-          </div>
-
-          <div className="mt-auto flex gap-2">
-            <Link
-              href={`/admin/jobs?agentId=${a.id}`}
-              className="text-lawn-primary hover:bg-lawn-badge-bg rounded-lg border border-lawn-primary/30 px-3 py-1.5 text-sm font-medium tracking-tight transition-colors"
-            >
-              View jobs
-            </Link>
-            <Link
-              href={`/admin/users/${a.id}`}
-              className="text-lawn-text-secondary rounded-lg border border-[#cecece]/70 px-3 py-1.5 text-sm font-medium tracking-tight transition-colors hover:bg-black/[0.03]"
-            >
-              Manage
-            </Link>
-          </div>
+    <DashboardPanel
+      title="Agent"
+      subtitle="Manage all registered service providers across the marketplace."
+      actions={
+        <>
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="text-muted-foreground hover:text-foreground flex shrink-0 transition-colors"
+          >
+            <Bell className="size-[26px]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setInviteOpen(true)}
+            className="lawn-gradient-btn inline-flex h-12 shrink-0 items-center gap-2 rounded-xl px-6 text-sm font-semibold text-white shadow-[0px_5px_10px_0px_rgba(25,81,52,0.25)] transition-transform active:scale-[0.98]"
+          >
+            <Plus className="size-[18px]" />
+            Invite agent
+          </button>
+        </>
+      }
+    >
+      {/* Search */}
+      <div>
+        <div className="border-border relative w-full max-w-[432px] rounded-[10px] border">
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2" />
+          <input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search agents.."
+            className="text-foreground placeholder:text-muted-foreground h-12 w-full rounded-[10px] bg-transparent pr-4 pl-11 text-sm outline-none"
+          />
         </div>
-      ))}
-    </div>
+      </div>
+
+      {/* Table */}
+      <div className="border-border overflow-x-auto rounded-xl border">
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr className="border-border border-b">
+              {COLUMNS.map((col) => (
+                <th
+                  key={col}
+                  className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
+                >
+                  {col}
+                </th>
+              ))}
+              <th className="w-16 px-5 py-4" aria-label="Actions" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={COLUMNS.length + 1}
+                  className="text-muted-foreground px-5 py-12 text-center text-sm"
+                >
+                  No agents match your search.
+                </td>
+              </tr>
+            ) : (
+              rows.map((a, i) => (
+                <tr
+                  key={a.id}
+                  className={cn(
+                    "align-middle",
+                    i !== rows.length - 1 && "border-border border-b",
+                  )}
+                >
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white"
+                        style={{ backgroundColor: a.avatarColor }}
+                      >
+                        {a.initial}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold whitespace-nowrap">
+                          {a.name}
+                        </p>
+                        <p className="text-muted-foreground text-sm whitespace-nowrap">
+                          {a.email}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+                    {a.contact}
+                  </td>
+                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+                    {a.serviceArea}
+                  </td>
+                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
+                    {a.bookings}
+                  </td>
+                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
+                    {a.revenue}
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <button
+                      type="button"
+                      aria-label={`Actions for ${a.name}`}
+                      className="text-muted-foreground hover:bg-accent/60 hover:text-foreground inline-flex size-8 items-center justify-center rounded-md transition-colors"
+                    >
+                      <MoreHorizontal className="size-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer: count + pagination */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-foreground text-sm">
+          Showing {rangeStart}-{rangeEnd} of {filtered.length} agents
+        </p>
+        <AdminPagination
+          page={current}
+          totalPages={totalPages}
+          onPageChange={(p) => setPage(p)}
+        />
+      </div>
+
+      <InviteAgentModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onSent={handleSent}
+      />
+
+      {toast && (
+        <div className="bg-primary text-primary-foreground fixed bottom-6 left-1/2 z-[60] flex -translate-x-1/2 items-center gap-2 rounded-[10px] px-5 py-3 text-sm font-medium shadow-lg">
+          <CheckCircle2 className="size-4" />
+          {toast}
+        </div>
+      )}
+    </DashboardPanel>
   );
 }

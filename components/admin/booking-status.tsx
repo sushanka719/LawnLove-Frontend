@@ -9,23 +9,29 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
+// Four booking states from the Figma donut (node 967:1739). Colors map to the
+// admin chart tokens; Cancelled uses the destructive red so all four arcs read
+// distinctly. Static mock — swap for the admin API.
 const chartConfig = {
   value: { label: "Bookings" },
   completed: { label: "Completed", color: "var(--chart-2)" },
-  active: { label: "Active", color: "var(--chart-3)" },
-  cancelled: { label: "Cancelled", color: "var(--chart-4)" },
+  scheduled: { label: "Scheduled", color: "var(--chart-3)" },
+  inProgress: { label: "In Progress", color: "var(--chart-4)" },
+  cancelled: { label: "Cancelled", color: "var(--destructive)" },
 } satisfies ChartConfig;
 
 const DATA = [
-  { status: "completed", value: 1420, fill: "var(--color-completed)" },
-  { status: "active", value: 1180, fill: "var(--color-active)" },
-  { status: "cancelled", value: 882, fill: "var(--color-cancelled)" },
+  { status: "completed", value: 1840, fill: "var(--color-completed)" },
+  { status: "scheduled", value: 642, fill: "var(--color-scheduled)" },
+  { status: "inProgress", value: 318, fill: "var(--color-inProgress)" },
+  { status: "cancelled", value: 682, fill: "var(--color-cancelled)" },
 ];
 
 const LEGEND = [
   { key: "completed", label: "Completed", color: "var(--chart-2)" },
-  { key: "active", label: "Active", color: "var(--chart-3)" },
-  { key: "cancelled", label: "Cancelled", color: "var(--chart-4)" },
+  { key: "scheduled", label: "Scheduled", color: "var(--chart-3)" },
+  { key: "inProgress", label: "In Progress", color: "var(--chart-4)" },
+  { key: "cancelled", label: "Cancelled", color: "var(--destructive)" },
 ] as const;
 
 export function BookingStatus() {
