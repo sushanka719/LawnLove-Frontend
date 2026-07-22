@@ -10,6 +10,7 @@ import { AddressForm } from "@/components/booking/address-form";
 import { BookingStepCard } from "@/components/booking/booking-step-card";
 import { BOOKING_STEPS } from "@/lib/booking-steps";
 import { useBookingStore } from "@/lib/store/booking-store";
+import { useConfirmationStore } from "@/lib/store/confirmation-store";
 import {
   addressStepSchema,
   type AddressStepValues,
@@ -21,6 +22,17 @@ export function AddressStep() {
   const prefilledAddress = searchParams.get("address") ?? "";
   const storedAddress = useBookingStore((state) => state.address);
   const setStoredAddress = useBookingStore((state) => state.setAddress);
+  const clearConfirmation = useConfirmationStore((state) => state.clearConfirmation);
+
+  // The address step is where a booking flow begins. A confirmation snapshot
+  // left over from a booking completed earlier this session is now stale — drop
+  // it so it can't later let the user reach /booking/confirmed mid-flow (the
+  // route guard treats a present snapshot as proof a booking just completed).
+  useEffect(() => {
+    clearConfirmation();
+    // Run once on mount, as the flow starts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // An address coming from the landing hero (?address=) is the user's latest
   // intent, so it wins over any stale value left in the store from a previous
