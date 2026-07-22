@@ -45,6 +45,8 @@ export type AdminUserListItem = {
   createdAt: string;
   bookingsCount: number;
   jobsCount: number;
+  // The user's default saved address, or null if they have none on file.
+  location: string | null;
 };
 
 export type AdminUserBooking = {

@@ -1,185 +1,47 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, CheckCircle2, MoreHorizontal, Plus, Search } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Bell,
+  CheckCircle2,
+  MapPin,
+  MoreHorizontal,
+  Plus,
+  Search,
+  UserRound,
+  Users,
+} from "lucide-react";
 
 import { AdminPagination } from "@/components/admin/admin-pagination";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 import { InviteAgentModal } from "@/components/admin/invite-agent-modal";
+import { avatarColor, getInitials } from "@/components/dashboard/user-avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminUsers } from "@/hooks/use-admin";
+import type { AdminUserListItem } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 
 /**
  * Super Admin → Customer screen (Figma node 1021:2083).
  *
- * Visual mock — the table rows are placeholder data. The admin API
- * (`getAdminUsers`) does not yet expose Location / Total Spend / Last Booking,
- * so swap `CUSTOMERS` for the real shape once those fields exist. The Invite
- * agent flow IS live (wired to `InviteAgentModal` → `useInviteAgent`).
+ * Wired to the live admin API (`useAdminUsers` → `GET /admin/users`) filtered to
+ * customers (role "user"). Search and paging are server-side. "Location" shows
+ * the customer's default saved address. Total Spend and Last Booking are
+ * designed columns the API doesn't expose yet, so they render an empty "—"
+ * placeholder. The row actions and the Invite agent flow are both live.
  */
-
-type Customer = {
-  id: string;
-  name: string;
-  email: string;
-  initial: string;
-  avatarColor: string;
-  location: string;
-  bookings: string;
-  totalSpend: string;
-  lastBooking: string;
-  joined: string;
-};
-
-const CUSTOMERS: Customer[] = [
-  {
-    id: "1",
-    name: "Gavrial Carter",
-    email: "gavrial4@gmail.com",
-    initial: "G",
-    avatarColor: "#4f46e5",
-    location: "Austin Metro, TX",
-    bookings: "32",
-    totalSpend: "$5675",
-    lastBooking: "Today",
-    joined: "January 14, 2026",
-  },
-  {
-    id: "2",
-    name: "Raymond Patel",
-    email: "raymond@gmail.com",
-    initial: "R",
-    avatarColor: "#9333ea",
-    location: "Dallas Metro, TX",
-    bookings: "03",
-    totalSpend: "$110",
-    lastBooking: "1 week ago",
-    joined: "March 09, 2026",
-  },
-  {
-    id: "3",
-    name: "Monica Walsh",
-    email: "monicaw@gmail.com",
-    initial: "M",
-    avatarColor: "#d97706",
-    location: "Phoenix Metro, AZ",
-    bookings: "12",
-    totalSpend: "$67",
-    lastBooking: "Yesterday",
-    joined: "January 02, 2026",
-  },
-  {
-    id: "4",
-    name: "Daniel Foster",
-    email: "daniel@gmail.com",
-    initial: "D",
-    avatarColor: "#0d9488",
-    location: "Tampa Metro, FL",
-    bookings: "10",
-    totalSpend: "$789",
-    lastBooking: "4 days ago",
-    joined: "June 12, 2026",
-  },
-  {
-    id: "5",
-    name: "Ivary Bennett",
-    email: "ivary@gmail.com",
-    initial: "I",
-    avatarColor: "#0e7490",
-    location: "Columbus Metro, OH",
-    bookings: "11",
-    totalSpend: "$600",
-    lastBooking: "3 days ago",
-    joined: "July 14, 2026",
-  },
-  {
-    id: "6",
-    name: "Rachel Nguyen",
-    email: "rachel@gmail.com",
-    initial: "R",
-    avatarColor: "#ca8a04",
-    location: "Denver Metro, CO",
-    bookings: "18",
-    totalSpend: "$630",
-    lastBooking: "1 week ago",
-    joined: "March 09, 2026",
-  },
-  {
-    id: "7",
-    name: "Rachel Nguyen",
-    email: "rachel@gmail.com",
-    initial: "R",
-    avatarColor: "#ca8a04",
-    location: "Denver Metro, CO",
-    bookings: "18",
-    totalSpend: "$630",
-    lastBooking: "1 week ago",
-    joined: "June 08, 2026",
-  },
-  {
-    id: "8",
-    name: "Rachel Nguyen",
-    email: "rachel@gmail.com",
-    initial: "R",
-    avatarColor: "#ca8a04",
-    location: "Denver Metro, CO",
-    bookings: "18",
-    totalSpend: "$630",
-    lastBooking: "Yesterday",
-    joined: "June 12, 2026",
-  },
-  {
-    id: "9",
-    name: "Marcus Lee",
-    email: "marcus@gmail.com",
-    initial: "M",
-    avatarColor: "#4f46e5",
-    location: "Seattle Metro, WA",
-    bookings: "24",
-    totalSpend: "$1240",
-    lastBooking: "2 days ago",
-    joined: "February 20, 2026",
-  },
-  {
-    id: "10",
-    name: "Priya Nair",
-    email: "priya@gmail.com",
-    initial: "P",
-    avatarColor: "#9333ea",
-    location: "Charlotte Metro, NC",
-    bookings: "15",
-    totalSpend: "$980",
-    lastBooking: "5 days ago",
-    joined: "April 11, 2026",
-  },
-  {
-    id: "11",
-    name: "Andre Willis",
-    email: "andre@gmail.com",
-    initial: "A",
-    avatarColor: "#0d9488",
-    location: "Atlanta Metro, GA",
-    bookings: "27",
-    totalSpend: "$2115",
-    lastBooking: "Today",
-    joined: "May 03, 2026",
-  },
-  {
-    id: "12",
-    name: "Sofia Ramos",
-    email: "sofia@gmail.com",
-    initial: "S",
-    avatarColor: "#d97706",
-    location: "Miami Metro, FL",
-    bookings: "09",
-    totalSpend: "$540",
-    lastBooking: "1 week ago",
-    joined: "June 27, 2026",
-  },
-];
 
 const COLUMNS = [
   "Customer",
   "Location",
+  "Status",
   "Bookings",
   "Total Spend",
   "Last Booking",
@@ -187,8 +49,45 @@ const COLUMNS = [
 ] as const;
 const PAGE_SIZE = 8;
 
+// Placeholder for a designed column whose data the API doesn't expose yet.
+const Empty = () => <span className="text-muted-foreground">—</span>;
+
+// A saved address can be a long free-text line, so cap it in the table cell and
+// keep the full value in a title tooltip.
+const MAX_LOCATION_CHARS = 28;
+
+function truncateLocation(value: string): string {
+  return value.length > MAX_LOCATION_CHARS
+    ? `${value.slice(0, MAX_LOCATION_CHARS).trimEnd()}…`
+    : value;
+}
+
+function formatJoined(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// Derive a human status from the account flags the API exposes.
+function customerStatus(u: AdminUserListItem): { label: string; className: string } {
+  if (u.banned) {
+    return { label: "Banned", className: "bg-red-100 text-red-700" };
+  }
+  if (u.deletionScheduledAt) {
+    return { label: "Deletion pending", className: "bg-[#fef3c7] text-[#b45309]" };
+  }
+  return { label: "Active", className: "bg-lawn-badge-bg text-lawn-primary" };
+}
+
 export function AdminUsers() {
+  const router = useRouter();
+
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [page, setPage] = useState(1);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [toast, setToast] = useState("");
@@ -200,23 +99,28 @@ export function AdminUsers() {
     };
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return CUSTOMERS;
-    return CUSTOMERS.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.location.toLowerCase().includes(q),
-    );
+  // Debounce the search so we don't fire a request on every keystroke; a new
+  // search always resets to page 1.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
   }, [query]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const current = Math.min(page, totalPages);
-  const start = (current - 1) * PAGE_SIZE;
-  const rows = filtered.slice(start, start + PAGE_SIZE);
-  const rangeStart = filtered.length === 0 ? 0 : start + 1;
-  const rangeEnd = start + rows.length;
+  const { data, isLoading, isError, isPlaceholderData, refetch } = useAdminUsers({
+    query: debouncedQuery || undefined,
+    role: "user",
+    page,
+    pageSize: PAGE_SIZE,
+  });
+
+  const users = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = (page - 1) * PAGE_SIZE + users.length;
 
   const handleSent = (email: string) => {
     setInviteOpen(false);
@@ -224,6 +128,9 @@ export function AdminUsers() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 2600);
   };
+
+  // No customers exist at all (not just filtered out by a search).
+  const isEmpty = !isLoading && !isError && !debouncedQuery && total === 0;
 
   return (
     <DashboardPanel
@@ -249,117 +156,210 @@ export function AdminUsers() {
         </>
       }
     >
-      {/* Search */}
-      <div>
-        <div className="border-border relative w-full max-w-[432px] rounded-[10px] border">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2" />
-          <input
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search customers.."
-            className="text-foreground placeholder:text-muted-foreground h-12 w-full rounded-[10px] bg-transparent pr-4 pl-11 text-sm outline-none"
-          />
+      {isError ? (
+        <div className="border-border flex flex-col items-center gap-3 rounded-xl border px-6 py-16 text-center">
+          <p className="text-foreground text-sm font-semibold">
+            We couldn&apos;t load customers.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Please check your connection and try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="border-border bg-background hover:bg-accent mt-1 h-10 rounded-lg border px-4 text-sm font-medium transition-colors"
+          >
+            Retry
+          </button>
         </div>
-      </div>
+      ) : isEmpty ? (
+        <div className="border-border flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center">
+          <span className="bg-accent text-muted-foreground flex size-14 items-center justify-center rounded-full">
+            <Users className="size-7" />
+          </span>
+          <p className="text-foreground text-base font-semibold">No customers yet</p>
+          <p className="text-muted-foreground max-w-sm text-sm">
+            Customers will appear here once people sign up and start booking lawn
+            services.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Search */}
+          <div>
+            <div className="border-border relative w-full max-w-[432px] rounded-[10px] border">
+              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search customers.."
+                className="text-foreground placeholder:text-muted-foreground h-12 w-full rounded-[10px] bg-transparent pr-4 pl-11 text-sm outline-none"
+              />
+            </div>
+          </div>
 
-      {/* Table */}
-      <div className="border-border overflow-x-auto rounded-xl border">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-border border-b">
-              {COLUMNS.map((col) => (
-                <th
-                  key={col}
-                  className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
-                >
-                  {col}
-                </th>
-              ))}
-              <th className="w-16 px-5 py-4" aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={COLUMNS.length + 1}
-                  className="text-muted-foreground px-5 py-12 text-center text-sm"
-                >
-                  No customers match your search.
-                </td>
-              </tr>
-            ) : (
-              rows.map((c, i) => (
-                <tr
-                  key={c.id}
-                  className={cn(
-                    "align-middle",
-                    i !== rows.length - 1 && "border-border border-b",
-                  )}
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white"
-                        style={{ backgroundColor: c.avatarColor }}
-                      >
-                        {c.initial}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold whitespace-nowrap">
-                          {c.name}
-                        </p>
-                        <p className="text-muted-foreground text-sm whitespace-nowrap">
-                          {c.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                    {c.location}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
-                    {c.bookings}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
-                    {c.totalSpend}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                    {c.lastBooking}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                    {c.joined}
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${c.name}`}
-                      className="text-muted-foreground hover:bg-accent/60 hover:text-foreground inline-flex size-8 items-center justify-center rounded-md transition-colors"
+          {/* Table */}
+          <div className="border-border overflow-x-auto rounded-xl border">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-border border-b">
+                  {COLUMNS.map((col) => (
+                    <th
+                      key={col}
+                      className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
                     >
-                      <MoreHorizontal className="size-5" />
-                    </button>
-                  </td>
+                      {col}
+                    </th>
+                  ))}
+                  <th className="w-16 px-5 py-4" aria-label="Actions" />
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr
+                      key={i}
+                      className={cn("align-middle", i !== 5 && "border-border border-b")}
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="size-10 shrink-0 rounded-full" />
+                          <div className="flex flex-col gap-1.5">
+                            <Skeleton className="h-3.5 w-32" />
+                            <Skeleton className="h-3 w-40" />
+                          </div>
+                        </div>
+                      </td>
+                      {Array.from({ length: COLUMNS.length - 1 }).map((_, j) => (
+                        <td key={j} className="px-5 py-4">
+                          <Skeleton className="h-3.5 w-16" />
+                        </td>
+                      ))}
+                      <td className="px-5 py-4" />
+                    </tr>
+                  ))
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={COLUMNS.length + 1}
+                      className="text-muted-foreground px-5 py-12 text-center text-sm"
+                    >
+                      No customers match your search.
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((u, i) => {
+                    const status = customerStatus(u);
+                    return (
+                      <tr
+                        key={u.id}
+                        className={cn(
+                          "align-middle",
+                          i !== users.length - 1 && "border-border border-b",
+                        )}
+                      >
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <span
+                              className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white uppercase"
+                              style={{ backgroundColor: avatarColor(u.id) }}
+                            >
+                              {getInitials(u.name, u.email)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold whitespace-nowrap">
+                                {u.name || "Unnamed customer"}
+                              </p>
+                              <p className="text-muted-foreground text-sm whitespace-nowrap">
+                                {u.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-sm whitespace-nowrap">
+                          {u.location ? (
+                            <span
+                              title={u.location}
+                              className="text-foreground inline-flex items-center gap-1.5 font-semibold"
+                            >
+                              <MapPin className="text-muted-foreground size-4 shrink-0" />
+                              {truncateLocation(u.location)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              No address on file
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={cn(
+                              "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-tight",
+                              status.className,
+                            )}
+                          >
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
+                          {u.bookingsCount}
+                        </td>
+                        {/* Total Spend — not exposed by the users API yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap tabular-nums">
+                          <Empty />
+                        </td>
+                        {/* Last Booking — not exposed by the users API yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap">
+                          <Empty />
+                        </td>
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+                          {formatJoined(u.createdAt)}
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              aria-label={`Actions for ${u.name || u.email}`}
+                              className="text-muted-foreground hover:bg-accent/60 hover:text-foreground inline-flex size-8 items-center justify-center rounded-md transition-colors outline-none"
+                            >
+                              <MoreHorizontal className="size-5" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/admin/users/${u.id}`)}
+                              >
+                                <UserRound />
+                                View profile
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Footer: count + pagination */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-foreground text-sm">
-          Showing {rangeStart}-{rangeEnd} of {filtered.length} customers
-        </p>
-        <AdminPagination
-          page={current}
-          totalPages={totalPages}
-          onPageChange={(p) => setPage(p)}
-        />
-      </div>
+          {/* Footer: count + pagination */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p
+              className={cn("text-foreground text-sm", isPlaceholderData && "opacity-60")}
+            >
+              {isLoading
+                ? "Loading customers…"
+                : `Showing ${rangeStart}-${rangeEnd} of ${total} customer${
+                    total === 1 ? "" : "s"
+                  }`}
+            </p>
+            <AdminPagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={(p) => setPage(p)}
+            />
+          </div>
+        </>
+      )}
 
       <InviteAgentModal
         open={inviteOpen}

@@ -18,6 +18,19 @@ export function getInitials(name?: string, email?: string) {
   return email?.[0]?.toUpperCase() ?? "?";
 }
 
+// A small fixed palette so an initials avatar keeps a stable, distinct color
+// without the API having to supply one. Chosen deterministically from a seed
+// (e.g. the user id), so the same person always gets the same color.
+const AVATAR_COLORS = ["#4f46e5", "#9333ea", "#d97706", "#0d9488", "#0e7490", "#ca8a04"];
+
+export function avatarColor(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+
 // Round user avatar that renders the uploaded photo when present and always
 // falls back to the initials circle when there's no image OR the image fails to
 // load (broken/expired URL, network error). Shared by the sidebar card and the
