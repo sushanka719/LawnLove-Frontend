@@ -21,6 +21,7 @@ import {
   getAdminStats,
   getAdminUser,
   getAdminUsers,
+  inviteAgent,
   refundJob,
   setUserRole,
   unbanUser,
@@ -84,8 +85,7 @@ export function useSetUserRole(id: string) {
 export function useBanUser(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { reason?: string; durationDays?: number }) =>
-      banUser(id, body),
+    mutationFn: (body: { reason?: string; durationDays?: number }) => banUser(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: adminKeys.user(id) });
       qc.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -108,6 +108,17 @@ export function useUnbanUser(id: string) {
 
 export function useAdminAgents() {
   return useQuery({ queryKey: adminKeys.agents, queryFn: getAdminAgents });
+}
+
+export function useInviteAgent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { email: string; businessName?: string }) => inviteAgent(body),
+    onSuccess: () => {
+      // A new/promoted agent may now show up in the agents list.
+      qc.invalidateQueries({ queryKey: adminKeys.agents });
+    },
+  });
 }
 
 // ---- Bookings ----

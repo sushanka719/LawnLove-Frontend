@@ -298,6 +298,3 @@ export const RECENT_BOOKINGS: RecentBooking[] = [
     statusColor: ACCENT.orange,
   },
 ];
-
-/** Regions offered in the Invite Agent modal. */
-export const INVITE_REGIONS = ["Texas", "Arizona", "Florida", "Georgia"];

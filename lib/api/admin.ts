@@ -99,14 +99,8 @@ export function setUserRole(id: string, role: AdminRole) {
   );
 }
 
-export function banUser(
-  id: string,
-  body: { reason?: string; durationDays?: number },
-) {
-  return http.post<{ id: string; banned: boolean }>(
-    `/admin/users/${id}/ban`,
-    body,
-  );
+export function banUser(id: string, body: { reason?: string; durationDays?: number }) {
+  return http.post<{ id: string; banned: boolean }>(`/admin/users/${id}/ban`, body);
 }
 
 export function unbanUser(id: string) {
@@ -128,6 +122,17 @@ export type AdminAgent = {
 
 export function getAdminAgents() {
   return http.get<AdminAgent[]>("/admin/agents");
+}
+
+// Result of inviting an agent. `outcome` distinguishes a fresh magic-link
+// invite from promoting/short-circuiting an email that already had an account.
+export type InviteAgentResult = {
+  status: boolean;
+  outcome: "invited" | "promoted" | "already_agent";
+};
+
+export function inviteAgent(body: { email: string; businessName?: string }) {
+  return http.post<InviteAgentResult>("/admin/agents/invite", body);
 }
 
 // ---- Bookings ----
@@ -190,9 +195,7 @@ export function getAdminBooking(id: string) {
 }
 
 export function cancelBooking(id: string) {
-  return http.post<{ id: string; status: BookingStatus }>(
-    `/admin/bookings/${id}/cancel`,
-  );
+  return http.post<{ id: string; status: BookingStatus }>(`/admin/bookings/${id}/cancel`);
 }
 
 // ---- Jobs (dispatch) ----
@@ -275,9 +278,7 @@ export function assignJob(id: string, agentId: string) {
 }
 
 export function refundJob(id: string) {
-  return http.post<{ id: string; status: JobStatus }>(
-    `/admin/jobs/${id}/refund`,
-  );
+  return http.post<{ id: string; status: JobStatus }>(`/admin/jobs/${id}/refund`);
 }
 
 // ---- Disputes ----
