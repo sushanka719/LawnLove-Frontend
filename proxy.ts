@@ -45,33 +45,42 @@ export async function proxy(request: NextRequest) {
   const isAdmin = ADMIN_ROUTES.some((route) => matches(pathname, route));
   const isGuestOnly = GUEST_ONLY_ROUTES.some((route) => matches(pathname, route));
 
-  const session = await getSession(request);
+  // A browser navigation with no cookies at all cannot carry a session, so skip
+  // the backend round-trip. This matters because the public landing page and
+  // booking flow are now matched too — most of that traffic is signed-out and
+  // would otherwise pay for a get-session fetch just to fall through.
+  const session = request.headers.get("cookie") ? await getSession(request) : null;
+  const role = session?.user?.role;
 
   if ((isProtected || isAgent || isAdmin) && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Admins are confined to the /admin console. Every surface outside it that
+  // this proxy sees — the marketing landing page (the entry point to booking),
+  // the customer booking flow, the customer dashboard, the agent area — bounces
+  // a signed-in admin back to /admin. This is what stops an admin creating a
+  // booking as if they were a normal customer, and keeps them out of the
+  // landing page. Customers and signed-out visitors fall through untouched.
+  if (role === "admin" && !isAdmin) {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
   // Agent area is role-gated — anyone who isn't an agent is sent to their own
   // home (admins → /admin, customers → /dashboard) rather than seeing a 403.
-  if (isAgent && session?.user?.role !== "agent") {
-    return NextResponse.redirect(
-      new URL(homeForRole(session?.user?.role), request.url),
-    );
+  if (isAgent && role !== "agent") {
+    return NextResponse.redirect(new URL(homeForRole(role), request.url));
   }
 
   // Admin area is role-gated the same way.
-  if (isAdmin && session?.user?.role !== "admin") {
-    return NextResponse.redirect(
-      new URL(homeForRole(session?.user?.role), request.url),
-    );
+  if (isAdmin && role !== "admin") {
+    return NextResponse.redirect(new URL(homeForRole(role), request.url));
   }
 
   // Already signed in but on a guest-only page (e.g. /login) — send them to
   // the home that matches their role instead of always the customer dashboard.
   if (isGuestOnly && session) {
-    return NextResponse.redirect(
-      new URL(homeForRole(session.user?.role), request.url),
-    );
+    return NextResponse.redirect(new URL(homeForRole(role), request.url));
   }
 
   return NextResponse.next();
@@ -79,6 +88,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    // Landing page and booking flow are matched so a signed-in admin can be
+    // bounced off them (see the admin-confinement rule); they stay open to
+    // customers and signed-out visitors.
+    "/",
+    "/booking/:path*",
     "/dashboard/:path*",
     "/agent/:path*",
     "/admin/:path*",
