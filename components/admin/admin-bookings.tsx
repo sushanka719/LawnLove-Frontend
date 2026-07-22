@@ -1,210 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, CheckCircle2, Plus } from "lucide-react";
+import { Bell, CalendarRange, CheckCircle2, Plus } from "lucide-react";
 
 import { AdminPagination } from "@/components/admin/admin-pagination";
 import { InviteAgentModal } from "@/components/admin/invite-agent-modal";
-import {
-  PaymentStatusBadge,
-  type PaymentStatus,
-} from "@/components/admin/payment-status-badge";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
+import { avatarColor, getInitials } from "@/components/dashboard/user-avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminBookings } from "@/hooks/use-admin";
 import { cn } from "@/lib/utils";
 
 /**
  * Super Admin → Bookings screen (Figma node 1021:3921).
  *
- * Visual mock — the table rows are placeholder data. Swap `BOOKINGS` for the
- * shape returned by the admin API (`getAdminBookings`) once wired. The Invite
- * agent flow IS live (wired to `InviteAgentModal` → `useInviteAgent`).
+ * Wired to the live admin API (`useAdminBookings` → `GET /admin/bookings`), paged
+ * server-side. Booking ID and Customer come from the API; Service defaults to
+ * "Lawn Mowing". Agent, Schedule Time, Amount, Plan and Payment Status are not
+ * wired yet — their columns render as empty placeholders until the backend
+ * exposes those fields.
  */
-
-type BookingRow = {
-  id: string;
-  reference: string;
-  customer: string;
-  email: string;
-  initial: string;
-  avatarColor: string;
-  agent: string;
-  service: string;
-  schedule: string;
-  amount: string;
-  plan: string;
-  payment: PaymentStatus;
-};
-
-const BOOKINGS: BookingRow[] = [
-  {
-    id: "1",
-    reference: "#BK-9078",
-    customer: "Gavrial Carter",
-    email: "gavrial4@gmail.com",
-    initial: "G",
-    avatarColor: "#4f46e5",
-    agent: "Green Blade Lawn",
-    service: "Lawn Mowing",
-    schedule: "Today-10:30 AM",
-    amount: "$567",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "2",
-    reference: "#BK-9078",
-    customer: "Raymond Patel",
-    email: "raymond@gmail.com",
-    initial: "R",
-    avatarColor: "#9333ea",
-    agent: "Fresh Cut Service",
-    service: "Lawn Mowing",
-    schedule: "Today-1:30 PM",
-    amount: "$110",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "3",
-    reference: "#BK-9078",
-    customer: "Monica Walsh",
-    email: "monicaw@gmail.com",
-    initial: "M",
-    avatarColor: "#d97706",
-    agent: "Yard Cleanup",
-    service: "Fertilization",
-    schedule: "Yesterday-5:30 PM",
-    amount: "$67",
-    plan: "Monthly",
-    payment: "completed",
-  },
-  {
-    id: "4",
-    reference: "#BK-9078",
-    customer: "Daniel Foster",
-    email: "daniel@gmail.com",
-    initial: "D",
-    avatarColor: "#0d9488",
-    agent: "Evergreen Yard Service",
-    service: "Lawn Mowing",
-    schedule: "Yesterday-12:30 PM",
-    amount: "$305",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "5",
-    reference: "#BK-9078",
-    customer: "Ivary Bennett",
-    email: "ivary@gmail.com",
-    initial: "I",
-    avatarColor: "#0e7490",
-    agent: "Yard Cleanup",
-    service: "Yard Cleanup",
-    schedule: "Yesterday-10:30 AM",
-    amount: "$60",
-    plan: "Monthly",
-    payment: "completed",
-  },
-  {
-    id: "6",
-    reference: "#BK-9078",
-    customer: "Rachel Nguyen",
-    email: "rachel@gmail.com",
-    initial: "R",
-    avatarColor: "#ca8a04",
-    agent: "Green Blade Lawn",
-    service: "Lawn Mowing",
-    schedule: "Today-1:30 PM",
-    amount: "$630",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "7",
-    reference: "#BK-9078",
-    customer: "Monica Walsh",
-    email: "monicaw@gmail.com",
-    initial: "M",
-    avatarColor: "#d97706",
-    agent: "Yard Cleanup",
-    service: "Lawn Mowing",
-    schedule: "Yesterday-09:30 AM",
-    amount: "$630",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "8",
-    reference: "#BK-9078",
-    customer: "Raymond Patel",
-    email: "raymond@gmail.com",
-    initial: "R",
-    avatarColor: "#9333ea",
-    agent: "Green Blade Lawn",
-    service: "Lawn Mowing",
-    schedule: "Yesterday-2:30 PM",
-    amount: "$630",
-    plan: "Monthly",
-    payment: "completed",
-  },
-  {
-    id: "9",
-    reference: "#BK-9078",
-    customer: "Daniel Foster",
-    email: "daniel@gmail.com",
-    initial: "D",
-    avatarColor: "#0d9488",
-    agent: "Fresh Cut Service",
-    service: "Fertilization",
-    schedule: "Today-9:00 AM",
-    amount: "$145",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "10",
-    reference: "#BK-9078",
-    customer: "Ivary Bennett",
-    email: "ivary@gmail.com",
-    initial: "I",
-    avatarColor: "#0e7490",
-    agent: "Evergreen Yard Service",
-    service: "Yard Cleanup",
-    schedule: "Yesterday-3:00 PM",
-    amount: "$88",
-    plan: "Monthly",
-    payment: "completed",
-  },
-  {
-    id: "11",
-    reference: "#BK-9078",
-    customer: "Gavrial Carter",
-    email: "gavrial4@gmail.com",
-    initial: "G",
-    avatarColor: "#4f46e5",
-    agent: "Green Blade Lawn",
-    service: "Lawn Mowing",
-    schedule: "Today-11:15 AM",
-    amount: "$210",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "12",
-    reference: "#BK-9078",
-    customer: "Monica Walsh",
-    email: "monicaw@gmail.com",
-    initial: "M",
-    avatarColor: "#d97706",
-    agent: "Fresh Cut Service",
-    service: "Fertilization",
-    schedule: "Yesterday-1:00 PM",
-    amount: "$72",
-    plan: "Monthly",
-    payment: "completed",
-  },
-];
 
 const COLUMNS = [
   "Booking ID",
@@ -218,6 +33,9 @@ const COLUMNS = [
 ] as const;
 const PAGE_SIZE = 8;
 
+// Placeholder for a column whose data the backend doesn't expose yet.
+const Empty = () => <span className="text-muted-foreground">—</span>;
+
 export function AdminBookings() {
   const [page, setPage] = useState(1);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -230,12 +48,16 @@ export function AdminBookings() {
     };
   }, []);
 
-  const totalPages = Math.max(1, Math.ceil(BOOKINGS.length / PAGE_SIZE));
-  const current = Math.min(page, totalPages);
-  const start = (current - 1) * PAGE_SIZE;
-  const rows = BOOKINGS.slice(start, start + PAGE_SIZE);
-  const rangeStart = BOOKINGS.length === 0 ? 0 : start + 1;
-  const rangeEnd = start + rows.length;
+  const { data, isLoading, isError, isPlaceholderData, refetch } = useAdminBookings({
+    page,
+    pageSize: PAGE_SIZE,
+  });
+
+  const bookings = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = (page - 1) * PAGE_SIZE + bookings.length;
 
   const handleSent = (email: string) => {
     setInviteOpen(false);
@@ -243,6 +65,8 @@ export function AdminBookings() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 2600);
   };
+
+  const isEmpty = !isLoading && !isError && total === 0;
 
   return (
     <DashboardPanel
@@ -268,86 +92,160 @@ export function AdminBookings() {
         </>
       }
     >
-      {/* Table */}
-      <div className="border-border overflow-x-auto rounded-xl border">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-border border-b">
-              {COLUMNS.map((col) => (
-                <th
-                  key={col}
-                  className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
-                >
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((b, i) => (
-              <tr
-                key={b.id}
-                className={cn(
-                  "align-middle",
-                  i !== rows.length - 1 && "border-border border-b",
-                )}
-              >
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {b.reference}
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white"
-                      style={{ backgroundColor: b.avatarColor }}
+      {isError ? (
+        <div className="border-border flex flex-col items-center gap-3 rounded-xl border px-6 py-16 text-center">
+          <p className="text-foreground text-sm font-semibold">
+            We couldn&apos;t load bookings.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Please check your connection and try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="border-border bg-background hover:bg-accent mt-1 h-10 rounded-lg border px-4 text-sm font-medium transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      ) : isEmpty ? (
+        <div className="border-border flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center">
+          <span className="bg-accent text-muted-foreground flex size-14 items-center justify-center rounded-full">
+            <CalendarRange className="size-7" />
+          </span>
+          <p className="text-foreground text-base font-semibold">No bookings yet</p>
+          <p className="text-muted-foreground max-w-sm text-sm">
+            Bookings will appear here as customers schedule lawn services on the platform.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Table */}
+          <div className="border-border overflow-x-auto rounded-xl border">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-border border-b">
+                  {COLUMNS.map((col) => (
+                    <th
+                      key={col}
+                      className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
                     >
-                      {b.initial}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold whitespace-nowrap">
-                        {b.customer}
-                      </p>
-                      <p className="text-muted-foreground text-sm whitespace-nowrap">
-                        {b.email}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {b.agent}
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {b.service}
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {b.schedule}
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
-                  {b.amount}
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {b.plan}
-                </td>
-                <td className="px-5 py-4">
-                  <PaymentStatusBadge payment={b.payment} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading
+                  ? Array.from({ length: 6 }).map((_, i) => (
+                      <tr
+                        key={i}
+                        className={cn(
+                          "align-middle",
+                          i !== 5 && "border-border border-b",
+                        )}
+                      >
+                        <td className="px-5 py-4">
+                          <Skeleton className="h-3.5 w-20" />
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="size-10 shrink-0 rounded-full" />
+                            <div className="flex flex-col gap-1.5">
+                              <Skeleton className="h-3.5 w-28" />
+                              <Skeleton className="h-3 w-36" />
+                            </div>
+                          </div>
+                        </td>
+                        {Array.from({ length: COLUMNS.length - 2 }).map((_, j) => (
+                          <td key={j} className="px-5 py-4">
+                            <Skeleton className="h-3.5 w-16" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  : bookings.map((b, i) => (
+                      <tr
+                        key={b.id}
+                        className={cn(
+                          "align-middle",
+                          i !== bookings.length - 1 && "border-border border-b",
+                        )}
+                      >
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+                          {b.reference}
+                        </td>
+                        <td className="px-5 py-4">
+                          {b.customer ? (
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white uppercase"
+                                style={{ backgroundColor: avatarColor(b.customer.id) }}
+                              >
+                                {getInitials(b.customer.name, b.customer.email)}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold whitespace-nowrap">
+                                  {b.customer.name || "Unnamed customer"}
+                                </p>
+                                <p className="text-muted-foreground text-sm whitespace-nowrap">
+                                  {b.customer.email}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <Empty />
+                          )}
+                        </td>
+                        {/* Agent — not exposed by the bookings API yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap">
+                          <Empty />
+                        </td>
+                        {/* Service — defaults to Lawn Mowing until per-service data exists. */}
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+                          Lawn Mowing
+                        </td>
+                        {/* Schedule Time — not wired yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap">
+                          <Empty />
+                        </td>
+                        {/* Amount — not wired yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap tabular-nums">
+                          <Empty />
+                        </td>
+                        {/* Plan — not wired yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap">
+                          <Empty />
+                        </td>
+                        {/* Payment Status — not wired yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap">
+                          <Empty />
+                        </td>
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Footer: count + pagination */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-foreground text-sm">
-          Showing {rangeStart}-{rangeEnd} of {BOOKINGS.length} bookings
-        </p>
-        <AdminPagination
-          page={current}
-          totalPages={totalPages}
-          onPageChange={(p) => setPage(p)}
-        />
-      </div>
+          {/* Footer: count + pagination */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p
+              className={cn("text-foreground text-sm", isPlaceholderData && "opacity-60")}
+            >
+              {isLoading
+                ? "Loading bookings…"
+                : `Showing ${rangeStart}-${rangeEnd} of ${total} booking${
+                    total === 1 ? "" : "s"
+                  }`}
+            </p>
+            <AdminPagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={(p) => setPage(p)}
+            />
+          </div>
+        </>
+      )}
 
       <InviteAgentModal
         open={inviteOpen}
