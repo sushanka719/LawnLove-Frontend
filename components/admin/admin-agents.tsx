@@ -1,173 +1,84 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, CheckCircle2, MoreHorizontal, Plus, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Bell,
+  Briefcase,
+  CheckCircle2,
+  MoreHorizontal,
+  Plus,
+  Search,
+  UserPlus,
+  UserRound,
+  Users,
+} from "lucide-react";
 
 import { AdminPagination } from "@/components/admin/admin-pagination";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 import { InviteAgentModal } from "@/components/admin/invite-agent-modal";
+import { avatarColor, getInitials } from "@/components/dashboard/user-avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminAgents } from "@/hooks/use-admin";
+import type { AdminAgent } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 
 /**
  * Super Admin → Agent screen (Figma node 1089:3891).
  *
- * Visual mock — the table rows are placeholder data. The admin API
- * (`getAdminAgents`) does not yet expose Contact / Service Area / Revenue, so
- * swap `AGENTS` for the real shape once those fields exist. The Invite agent
- * flow IS live (wired to `InviteAgentModal` → `useInviteAgent`).
+ * Wired to the live admin API (`useAdminAgents` → `GET /admin/agents`). The list
+ * is returned unpaginated, so search and paging happen client-side. Status, job
+ * counts and joined date come from the API; Contact, Service Area and Revenue
+ * are designed columns the API doesn't expose yet, so they render an empty "—"
+ * placeholder. The row actions and the Invite agent flow are both live.
  */
 
-type Agent = {
-  id: string;
-  name: string;
-  email: string;
-  initial: string;
-  avatarColor: string;
-  contact: string;
-  serviceArea: string;
-  bookings: string;
-  revenue: string;
-};
-
-const AGENTS: Agent[] = [
-  {
-    id: "1",
-    name: "Gavrial Carter",
-    email: "gavrial4@gmail.com",
-    initial: "G",
-    avatarColor: "#4f46e5",
-    contact: "(512) 555-5343",
-    serviceArea: "Austin Metro, TX",
-    bookings: "32",
-    revenue: "$5675",
-  },
-  {
-    id: "2",
-    name: "Raymond Patel",
-    email: "raymond@gmail.com",
-    initial: "R",
-    avatarColor: "#9333ea",
-    contact: "(512) 555-1256",
-    serviceArea: "Dallas Metro, TX",
-    bookings: "03",
-    revenue: "$110",
-  },
-  {
-    id: "3",
-    name: "Monica Walsh",
-    email: "monicaw@gmail.com",
-    initial: "M",
-    avatarColor: "#d97706",
-    contact: "(512) 236-5343",
-    serviceArea: "Phoenix Metro, AZ",
-    bookings: "12",
-    revenue: "$67",
-  },
-  {
-    id: "4",
-    name: "Daniel Foster",
-    email: "daniel@gmail.com",
-    initial: "D",
-    avatarColor: "#0d9488",
-    contact: "(512) 332-3069",
-    serviceArea: "Tampa Metro, FL",
-    bookings: "10",
-    revenue: "$789",
-  },
-  {
-    id: "5",
-    name: "Ivary Bennett",
-    email: "ivary@gmail.com",
-    initial: "I",
-    avatarColor: "#0e7490",
-    contact: "(512) 851-9652",
-    serviceArea: "Columbus Metro, OH",
-    bookings: "11",
-    revenue: "$600",
-  },
-  {
-    id: "6",
-    name: "Rachel Nguyen",
-    email: "rachel@gmail.com",
-    initial: "R",
-    avatarColor: "#ca8a04",
-    contact: "(512) 128-8521",
-    serviceArea: "Denver Metro, CO",
-    bookings: "18",
-    revenue: "$630",
-  },
-  {
-    id: "7",
-    name: "Rachel Nguyen",
-    email: "rachel@gmail.com",
-    initial: "R",
-    avatarColor: "#ca8a04",
-    contact: "(512) 128-8521",
-    serviceArea: "Denver Metro, CO",
-    bookings: "18",
-    revenue: "$630",
-  },
-  {
-    id: "8",
-    name: "Rachel Nguyen",
-    email: "rachel@gmail.com",
-    initial: "R",
-    avatarColor: "#ca8a04",
-    contact: "(512) 128-8521",
-    serviceArea: "Denver Metro, CO",
-    bookings: "18",
-    revenue: "$630",
-  },
-  {
-    id: "9",
-    name: "Marcus Lee",
-    email: "marcus@gmail.com",
-    initial: "M",
-    avatarColor: "#4f46e5",
-    contact: "(512) 447-9021",
-    serviceArea: "Seattle Metro, WA",
-    bookings: "24",
-    revenue: "$1240",
-  },
-  {
-    id: "10",
-    name: "Priya Nair",
-    email: "priya@gmail.com",
-    initial: "P",
-    avatarColor: "#9333ea",
-    contact: "(512) 660-3388",
-    serviceArea: "Charlotte Metro, NC",
-    bookings: "15",
-    revenue: "$980",
-  },
-  {
-    id: "11",
-    name: "Andre Willis",
-    email: "andre@gmail.com",
-    initial: "A",
-    avatarColor: "#0d9488",
-    contact: "(512) 219-7745",
-    serviceArea: "Atlanta Metro, GA",
-    bookings: "27",
-    revenue: "$2115",
-  },
-  {
-    id: "12",
-    name: "Sofia Ramos",
-    email: "sofia@gmail.com",
-    initial: "S",
-    avatarColor: "#d97706",
-    contact: "(512) 905-1122",
-    serviceArea: "Miami Metro, FL",
-    bookings: "09",
-    revenue: "$540",
-  },
-];
-
-const COLUMNS = ["Agent", "Contact", "Service Area", "Bookings", "Revenue"] as const;
+const COLUMNS = [
+  "Agent",
+  "Contact",
+  "Service Area",
+  "Status",
+  "Active Jobs",
+  "Total Jobs",
+  "Revenue",
+  "Joined",
+] as const;
 const PAGE_SIZE = 8;
 
+// Placeholder for a designed column whose data the API doesn't expose yet.
+const Empty = () => <span className="text-muted-foreground">—</span>;
+
+function formatJoined(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// Derive a human status from the two onboarding booleans the API exposes.
+function agentStatus(agent: AdminAgent): { label: string; className: string } {
+  if (agent.payoutsEnabled) {
+    return { label: "Active", className: "bg-lawn-badge-bg text-lawn-primary" };
+  }
+  if (agent.onboarded) {
+    return { label: "Onboarding", className: "bg-[#fef3c7] text-[#b45309]" };
+  }
+  return { label: "Invited", className: "bg-[#dbeafe] text-[#1d4ed8]" };
+}
+
 export function AdminAgents() {
+  const router = useRouter();
+  const { data, isLoading, isError, refetch } = useAdminAgents();
+
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -180,16 +91,15 @@ export function AdminAgents() {
     };
   }, []);
 
+  const agents = useMemo(() => data ?? [], [data]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return AGENTS;
-    return AGENTS.filter(
-      (a) =>
-        a.name.toLowerCase().includes(q) ||
-        a.email.toLowerCase().includes(q) ||
-        a.serviceArea.toLowerCase().includes(q),
+    if (!q) return agents;
+    return agents.filter(
+      (a) => a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [agents, query]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, totalPages);
@@ -204,6 +114,9 @@ export function AdminAgents() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 2600);
   };
+
+  // No agents exist at all (not just filtered out) — show the onboarding CTA.
+  const isEmpty = !isLoading && !isError && agents.length === 0;
 
   return (
     <DashboardPanel
@@ -229,114 +142,217 @@ export function AdminAgents() {
         </>
       }
     >
-      {/* Search */}
-      <div>
-        <div className="border-border relative w-full max-w-[432px] rounded-[10px] border">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2" />
-          <input
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search agents.."
-            className="text-foreground placeholder:text-muted-foreground h-12 w-full rounded-[10px] bg-transparent pr-4 pl-11 text-sm outline-none"
-          />
+      {isError ? (
+        <div className="border-border flex flex-col items-center gap-3 rounded-xl border px-6 py-16 text-center">
+          <p className="text-foreground text-sm font-semibold">
+            We couldn&apos;t load agents.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Please check your connection and try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="border-border bg-background hover:bg-accent mt-1 h-10 rounded-lg border px-4 text-sm font-medium transition-colors"
+          >
+            Retry
+          </button>
         </div>
-      </div>
+      ) : isEmpty ? (
+        <div className="border-border flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center">
+          <span className="bg-accent text-muted-foreground flex size-14 items-center justify-center rounded-full">
+            <Users className="size-7" />
+          </span>
+          <p className="text-foreground text-base font-semibold">No agents yet</p>
+          <p className="text-muted-foreground max-w-sm text-sm">
+            Invite your first lawn care agent to start assigning jobs and building out the
+            marketplace.
+          </p>
+          <button
+            type="button"
+            onClick={() => setInviteOpen(true)}
+            className="lawn-gradient-btn mt-2 inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-[0px_5px_10px_0px_rgba(25,81,52,0.25)] transition-transform active:scale-[0.98]"
+          >
+            <UserPlus className="size-[18px]" />
+            Invite agent
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Search */}
+          <div>
+            <div className="border-border relative w-full max-w-[432px] rounded-[10px] border">
+              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2" />
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search agents.."
+                className="text-foreground placeholder:text-muted-foreground h-12 w-full rounded-[10px] bg-transparent pr-4 pl-11 text-sm outline-none"
+              />
+            </div>
+          </div>
 
-      {/* Table */}
-      <div className="border-border overflow-x-auto rounded-xl border">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-border border-b">
-              {COLUMNS.map((col) => (
-                <th
-                  key={col}
-                  className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
-                >
-                  {col}
-                </th>
-              ))}
-              <th className="w-16 px-5 py-4" aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={COLUMNS.length + 1}
-                  className="text-muted-foreground px-5 py-12 text-center text-sm"
-                >
-                  No agents match your search.
-                </td>
-              </tr>
-            ) : (
-              rows.map((a, i) => (
-                <tr
-                  key={a.id}
-                  className={cn(
-                    "align-middle",
-                    i !== rows.length - 1 && "border-border border-b",
-                  )}
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white"
-                        style={{ backgroundColor: a.avatarColor }}
-                      >
-                        {a.initial}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold whitespace-nowrap">
-                          {a.name}
-                        </p>
-                        <p className="text-muted-foreground text-sm whitespace-nowrap">
-                          {a.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                    {a.contact}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                    {a.serviceArea}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
-                    {a.bookings}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
-                    {a.revenue}
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${a.name}`}
-                      className="text-muted-foreground hover:bg-accent/60 hover:text-foreground inline-flex size-8 items-center justify-center rounded-md transition-colors"
+          {/* Table */}
+          <div className="border-border overflow-x-auto rounded-xl border">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-border border-b">
+                  {COLUMNS.map((col) => (
+                    <th
+                      key={col}
+                      className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
                     >
-                      <MoreHorizontal className="size-5" />
-                    </button>
-                  </td>
+                      {col}
+                    </th>
+                  ))}
+                  <th className="w-16 px-5 py-4" aria-label="Actions" />
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr
+                      key={i}
+                      className={cn("align-middle", i !== 5 && "border-border border-b")}
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="size-10 shrink-0 rounded-full" />
+                          <div className="flex flex-col gap-1.5">
+                            <Skeleton className="h-3.5 w-32" />
+                            <Skeleton className="h-3 w-40" />
+                          </div>
+                        </div>
+                      </td>
+                      {Array.from({ length: COLUMNS.length - 1 }).map((_, j) => (
+                        <td key={j} className="px-5 py-4">
+                          <Skeleton className="h-3.5 w-16" />
+                        </td>
+                      ))}
+                      <td className="px-5 py-4" />
+                    </tr>
+                  ))
+                ) : rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={COLUMNS.length + 1}
+                      className="text-muted-foreground px-5 py-12 text-center text-sm"
+                    >
+                      No agents match your search.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((a, i) => {
+                    const status = agentStatus(a);
+                    return (
+                      <tr
+                        key={a.id}
+                        className={cn(
+                          "align-middle",
+                          i !== rows.length - 1 && "border-border border-b",
+                        )}
+                      >
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <span
+                              className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white uppercase"
+                              style={{ backgroundColor: avatarColor(a.id) }}
+                            >
+                              {getInitials(a.name, a.email)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold whitespace-nowrap">
+                                {a.name || "Unnamed agent"}
+                              </p>
+                              <p className="text-muted-foreground text-sm whitespace-nowrap">
+                                {a.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        {/* Contact — not exposed by the agents API yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap">
+                          <Empty />
+                        </td>
+                        {/* Service Area — not exposed by the agents API yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap">
+                          <Empty />
+                        </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={cn(
+                              "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-tight",
+                              status.className,
+                            )}
+                          >
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
+                          {a.activeJobs}
+                        </td>
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
+                          {a.totalJobs}
+                        </td>
+                        {/* Revenue — not exposed by the agents API yet. */}
+                        <td className="px-5 py-4 text-sm whitespace-nowrap tabular-nums">
+                          <Empty />
+                        </td>
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+                          {formatJoined(a.createdAt)}
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              aria-label={`Actions for ${a.name || a.email}`}
+                              className="text-muted-foreground hover:bg-accent/60 hover:text-foreground inline-flex size-8 items-center justify-center rounded-md transition-colors outline-none"
+                            >
+                              <MoreHorizontal className="size-5" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/admin/users/${a.id}`)}
+                              >
+                                <UserRound />
+                                View profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/admin/jobs?agentId=${a.id}`)}
+                              >
+                                <Briefcase />
+                                View jobs
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Footer: count + pagination */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-foreground text-sm">
-          Showing {rangeStart}-{rangeEnd} of {filtered.length} agents
-        </p>
-        <AdminPagination
-          page={current}
-          totalPages={totalPages}
-          onPageChange={(p) => setPage(p)}
-        />
-      </div>
+          {/* Footer: count + pagination */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-foreground text-sm">
+              {isLoading
+                ? "Loading agents…"
+                : `Showing ${rangeStart}-${rangeEnd} of ${filtered.length} agent${
+                    filtered.length === 1 ? "" : "s"
+                  }`}
+            </p>
+            <AdminPagination
+              page={current}
+              totalPages={totalPages}
+              onPageChange={(p) => setPage(p)}
+            />
+          </div>
+        </>
+      )}
 
       <InviteAgentModal
         open={inviteOpen}
