@@ -5,14 +5,13 @@ import { Bell, CheckCircle2, ChevronDown, Plus } from "lucide-react";
 
 import { InviteAgentModal } from "@/components/admin/invite-agent-modal";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
+import { useAdminSettings, useUpdateSettings } from "@/hooks/use-admin";
+import { ApiError } from "@/lib/api/http";
 import { cn } from "@/lib/utils";
 
 /**
- * Super Admin → Settings screen (Figma nodes 1071:1249 + 1080:4471).
- *
- * Visual mock — form fields, the payouts toggle, and the schedule dropdown only
- * hold local state; "Save and continue" toasts. Wire to a settings API when it
- * exists. The Invite agent flow IS live (`InviteAgentModal` → `useInviteAgent`).
+ * Super Admin → Settings screen. Live against GET/PUT /admin/settings (the
+ * AppSettings singleton). The Invite agent flow is also live.
  */
 
 type Tab = "general" | "payments";
@@ -22,12 +21,16 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "payments", label: "Payments" },
 ];
 
-const SCHEDULES = ["Daily", "Weekly", "Monthly"] as const;
+const SCHEDULES = ["manual", "daily", "weekly"] as const;
+const SCHEDULE_LABELS: Record<string, string> = {
+  manual: "Manual",
+  daily: "Daily",
+  weekly: "Weekly",
+};
 
 const inputClass =
   "border-border text-foreground placeholder:text-muted-foreground w-full rounded-[10px] border bg-transparent px-4 py-3 text-sm outline-none focus:border-primary/50";
 
-/** 51×31 pill switch — ON is forest green with the knob to the right. */
 function Toggle({
   checked,
   onChange,
@@ -61,11 +64,34 @@ function Toggle({
 
 export function AdminSettings() {
   const [tab, setTab] = useState<Tab>("general");
-  const [autoPayouts, setAutoPayouts] = useState(true);
-  const [schedule, setSchedule] = useState<(typeof SCHEDULES)[number]>("Weekly");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [toast, setToast] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { data: settings } = useAdminSettings();
+  const updateSettings = useUpdateSettings();
+
+  // Local form state, seeded once from the server.
+  const [platformName, setPlatformName] = useState("");
+  const [supportEmail, setSupportEmail] = useState("");
+  const [commissionPct, setCommissionPct] = useState(""); // whole percent, e.g. "20"
+  const [payoutsEnabled, setPayoutsEnabled] = useState(false);
+  const [schedule, setSchedule] = useState<(typeof SCHEDULES)[number]>("manual");
+  const [seeded, setSeeded] = useState(false);
+
+  // Seed the form once settings load (set-during-render, guarded so it runs once).
+  if (settings && !seeded) {
+    setSeeded(true);
+    setPlatformName(settings.platformName ?? "");
+    setSupportEmail(settings.supportEmail ?? "");
+    setCommissionPct(String(Math.round(settings.platformFeePct * 100)));
+    setPayoutsEnabled(settings.payoutsEnabled);
+    setSchedule(
+      (SCHEDULES as readonly string[]).includes(settings.payoutSchedule)
+        ? (settings.payoutSchedule as (typeof SCHEDULES)[number])
+        : "manual",
+    );
+  }
 
   useEffect(() => {
     return () => {
@@ -79,6 +105,26 @@ export function AdminSettings() {
     toastTimer.current = setTimeout(() => setToast(""), 2600);
   };
 
+  const save = async () => {
+    const pct = Number(commissionPct);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      showToast("Commission must be between 0 and 100.");
+      return;
+    }
+    try {
+      await updateSettings.mutateAsync({
+        platformName: platformName.trim() || undefined,
+        supportEmail: supportEmail.trim() || undefined,
+        platformFeePct: pct / 100,
+        payoutsEnabled,
+        payoutSchedule: schedule,
+      });
+      showToast("Settings saved");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "Couldn't save settings.");
+    }
+  };
+
   const handleSent = (email: string) => {
     setInviteOpen(false);
     showToast(email ? `Invitation sent to ${email}` : "Invitation sent");
@@ -87,10 +133,11 @@ export function AdminSettings() {
   const SaveButton = (
     <button
       type="button"
-      onClick={() => showToast("Settings saved")}
-      className="lawn-gradient-btn inline-flex items-center justify-center rounded-xl px-8 py-3 text-sm font-semibold text-white shadow-[0px_5px_10px_0px_rgba(25,81,52,0.25)] transition-transform active:scale-[0.98]"
+      onClick={save}
+      disabled={updateSettings.isPending}
+      className="lawn-gradient-btn inline-flex items-center justify-center rounded-xl px-8 py-3 text-sm font-semibold text-white shadow-[0px_5px_10px_0px_rgba(25,81,52,0.25)] transition-transform active:scale-[0.98] disabled:opacity-60"
     >
-      Save and continue
+      {updateSettings.isPending ? "Saving…" : "Save and continue"}
     </button>
   );
 
@@ -145,8 +192,24 @@ export function AdminSettings() {
             <div className="flex flex-col gap-6">
               <h2 className="text-lg font-semibold tracking-[-0.01em]">General</h2>
               <div className="flex flex-col gap-3.5">
-                <input className={inputClass} placeholder="Platform Name" />
-                <input className={inputClass} placeholder="Support Email" />
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium">Platform name</span>
+                  <input
+                    className={inputClass}
+                    placeholder="LawnLove"
+                    value={platformName}
+                    onChange={(e) => setPlatformName(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium">Support email</span>
+                  <input
+                    className={inputClass}
+                    placeholder="support@lawnlove.com"
+                    value={supportEmail}
+                    onChange={(e) => setSupportEmail(e.target.value)}
+                  />
+                </label>
               </div>
               <div>{SaveButton}</div>
             </div>
@@ -162,10 +225,18 @@ export function AdminSettings() {
                     The platform&apos;s cut on every completed booking.
                   </p>
                 </div>
-                <div className="flex flex-col gap-3.5">
-                  <input className={inputClass} placeholder="Platform Name" />
-                  <input className={inputClass} placeholder="Support Email" />
-                </div>
+                <label className="flex max-w-xs flex-col gap-1.5">
+                  <span className="text-sm font-medium">Platform fee (%)</span>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    min={0}
+                    max={100}
+                    placeholder="20"
+                    value={commissionPct}
+                    onChange={(e) => setCommissionPct(e.target.value)}
+                  />
+                </label>
               </div>
 
               {/* Payouts */}
@@ -180,15 +251,15 @@ export function AdminSettings() {
                 <div className="flex flex-col gap-5">
                   <div className="flex items-center gap-4">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[15px] font-semibold">Automatic payouts</p>
+                      <p className="text-[15px] font-semibold">Payouts enabled</p>
                       <p className="text-muted-foreground text-sm">
-                        Release earnings on a fixed schedule without manual review.
+                        Master switch for issuing agent payouts.
                       </p>
                     </div>
                     <Toggle
-                      checked={autoPayouts}
-                      onChange={setAutoPayouts}
-                      label="Automatic payouts"
+                      checked={payoutsEnabled}
+                      onChange={setPayoutsEnabled}
+                      label="Payouts enabled"
                     />
                   </div>
 
@@ -196,7 +267,7 @@ export function AdminSettings() {
                     <div className="min-w-0 flex-1">
                       <p className="text-[15px] font-semibold">Payout schedule</p>
                       <p className="text-muted-foreground text-sm">
-                        Frequency for automatic transfers.
+                        Payouts are issued manually today; schedule is informational.
                       </p>
                     </div>
                     <div className="relative shrink-0">
@@ -210,7 +281,7 @@ export function AdminSettings() {
                       >
                         {SCHEDULES.map((s) => (
                           <option key={s} value={s}>
-                            {s}
+                            {SCHEDULE_LABELS[s]}
                           </option>
                         ))}
                       </select>
