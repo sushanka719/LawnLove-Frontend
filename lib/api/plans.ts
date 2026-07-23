@@ -7,13 +7,6 @@ import { http } from "@/lib/api/http";
 export type PlanBillingType = "recurring" | "oneTime";
 export type PlanInterval = "weekly" | "biweekly" | "monthly";
 
-export type PlanAreaTier = {
-  id: string;
-  minSqFt: number;
-  maxSqFt: number | null; // null = open-ended top bracket
-  surcharge: number; // cents added to basePrice for this bracket
-};
-
 export type Plan = {
   id: string;
   name: string;
@@ -28,7 +21,6 @@ export type Plan = {
   stripeProductId: string | null;
   createdAt: string;
   updatedAt: string;
-  areaTiers: PlanAreaTier[];
 };
 
 // ---- Public (booking flow) ----
@@ -38,12 +30,6 @@ export function getPlans() {
 }
 
 // ---- Admin CRUD ----
-
-export type PlanAreaTierInput = {
-  minSqFt: number;
-  maxSqFt?: number | null;
-  surcharge: number;
-};
 
 export type CreatePlanInput = {
   name: string;
@@ -55,7 +41,6 @@ export type CreatePlanInput = {
   features?: string[];
   active?: boolean;
   sortOrder?: number;
-  areaTiers?: PlanAreaTierInput[];
 };
 
 export type UpdatePlanInput = Partial<CreatePlanInput>;

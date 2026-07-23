@@ -10,8 +10,6 @@ import { FloatingLabelField } from "@/components/booking/floating-label-field";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useAddresses } from "@/hooks/use-addresses";
-import { useSession } from "@/hooks/use-session";
 import { getCurrentPosition } from "@/lib/geolocation";
 import { geocodeAddress, reverseGeocode, type GeocodeSuggestion } from "@/lib/mapbox";
 import type { AddressStepValues } from "@/lib/validation/booking-schemas";
@@ -22,9 +20,17 @@ type AddressFormProps = {
   form: UseFormReturn<AddressStepValues>;
   defaultAddress: string;
   onSubmit: (values: AddressStepValues) => void;
+  // When set, the "Go back" button returns to the saved-address picker instead
+  // of navigating out of the booking flow.
+  onBack?: () => void;
 };
 
-export function AddressForm({ form, defaultAddress, onSubmit }: AddressFormProps) {
+export function AddressForm({
+  form,
+  defaultAddress,
+  onSubmit,
+  onBack,
+}: AddressFormProps) {
   const router = useRouter();
   const {
     register,
@@ -37,11 +43,6 @@ export function AddressForm({ form, defaultAddress, onSubmit }: AddressFormProps
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [locating, setLocating] = useState(false);
-
-  // Returning, signed-in customers can prefill from a saved address. Guests hit
-  // a 401 on /addresses, so only fetch once a session exists.
-  const { data: session } = useSession();
-  const { data: savedAddresses } = useAddresses({ enabled: !!session });
 
   const addressValue = watch("address");
 
@@ -58,18 +59,6 @@ export function AddressForm({ form, defaultAddress, onSubmit }: AddressFormProps
     addressField.onChange(event);
     setValue("lat", null);
     setValue("lng", null);
-  };
-
-  const applySavedAddress = (saved: {
-    address: string;
-    lat: number | null;
-    lng: number | null;
-  }) => {
-    setValue("address", saved.address, { shouldValidate: true });
-    setValue("lat", saved.lat);
-    setValue("lng", saved.lng);
-    setSuggestions([]);
-    setShowSuggestions(false);
   };
 
   useEffect(() => {
@@ -129,27 +118,6 @@ export function AddressForm({ form, defaultAddress, onSubmit }: AddressFormProps
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex w-full flex-col gap-6">
-      {savedAddresses && savedAddresses.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-lawn-text-secondary text-sm font-medium tracking-tight">
-            Use a saved address
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {savedAddresses.map((saved) => (
-              <button
-                key={saved.id}
-                type="button"
-                onClick={() => applySavedAddress(saved)}
-                className="border-lawn-primary-light text-lawn-text-primary hover:bg-lawn-primary-light/10 flex items-center gap-2 rounded-[10px] border-[1.2px] px-3 py-2 text-sm font-medium tracking-tight transition-colors"
-              >
-                <MapPin className="text-lawn-primary size-4 shrink-0" />
-                {saved.address.split(",")[0].trim()}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       <FieldGroup className="gap-4">
         <Field>
           <Input
@@ -212,7 +180,7 @@ export function AddressForm({ form, defaultAddress, onSubmit }: AddressFormProps
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
+          onClick={onBack ?? (() => router.back())}
           className="border-lawn-primary-light text-lawn-primary h-auto flex-1 rounded-xl border-[1.2px] bg-transparent px-8 py-3 text-base font-semibold shadow-none hover:bg-transparent"
         >
           Go back
