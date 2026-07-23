@@ -1,113 +1,29 @@
-import Link from "next/link";
+"use client";
 
-import {
-  PaymentStatusBadge,
-  type PaymentStatus,
-} from "@/components/admin/payment-status-badge";
+import Link from "next/link";
+import { CalendarRange } from "lucide-react";
+
+import { BookingStatusBadge } from "@/components/dashboard/booking-status-badge";
+import { avatarColor, getInitials } from "@/components/dashboard/user-avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminBookings } from "@/hooks/use-admin";
+import type { AdminBookingListItem } from "@/lib/api/admin";
+import { formatCents, formatScheduleDate } from "@/lib/jobs";
+import { FREQUENCY_LABELS, type Frequency } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 /**
  * Recent Bookings table for the Super Admin dashboard (Figma node 986:5611).
  *
- * Static visual mock — swap `ROWS` for the shape returned by the admin API
- * (see `lib/api/admin.ts` / `hooks/use-admin.ts`) when wiring to real data.
+ * Wired to the live admin API (`useAdminBookings` → `GET /admin/bookings`), which
+ * returns rows ordered by `createdAt` desc — i.e. the latest activity. We show
+ * the most recent {@link ROWS_SHOWN} and link to the full paged list.
+ *
+ * Booking ID, Customer, Schedule Time, Amount, Plan and Payment (booking status)
+ * come from the API. Service is a constant ("Lawn Mowing") and Agent is not
+ * exposed by the list endpoint yet — both mirror the "View all" page
+ * (`admin-bookings.tsx`).
  */
-
-type BookingRow = {
-  id: string;
-  customer: string;
-  email: string;
-  /** Single-letter avatar fallback + its background color. */
-  initial: string;
-  avatarColor: string;
-  agent: string;
-  service: string;
-  schedule: string;
-  amount: string;
-  plan: string;
-  payment: PaymentStatus;
-};
-
-const ROWS: BookingRow[] = [
-  {
-    id: "#BK-9078",
-    customer: "Gavrial Carter",
-    email: "gavrial4@gmail.com",
-    initial: "G",
-    avatarColor: "#22a35a",
-    agent: "Green Blade Lawn",
-    service: "Lawn Mowing",
-    schedule: "Today-10:30 AM",
-    amount: "$567",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "#BK-9078",
-    customer: "Raymond Patel",
-    email: "raymond@gmail.com",
-    initial: "R",
-    avatarColor: "#9333ea",
-    agent: "Fresh Cut Service",
-    service: "Lawn Mowing",
-    schedule: "Today-1:30 PM",
-    amount: "$110",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "#BK-9078",
-    customer: "Monica Walsh",
-    email: "monicaw@gmail.com",
-    initial: "M",
-    avatarColor: "#d97706",
-    agent: "Yard Cleanup",
-    service: "Fertilization",
-    schedule: "Yesterday-5:30 PM",
-    amount: "$67",
-    plan: "Monthly",
-    payment: "completed",
-  },
-  {
-    id: "#BK-9078",
-    customer: "Daniel Foster",
-    email: "daniel@gmail.com",
-    initial: "D",
-    avatarColor: "#0d9488",
-    agent: "Evergreen Yard Service",
-    service: "Lawn Mowing",
-    schedule: "Yesterday-12:30 PM",
-    amount: "$305",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-  {
-    id: "#BK-9078",
-    customer: "Ivary Bennett",
-    email: "ivary@gmail.com",
-    initial: "I",
-    avatarColor: "#2563eb",
-    agent: "Yard Cleanup",
-    service: "Yard Cleanup",
-    schedule: "Yesterday-10:30 AM",
-    amount: "$60",
-    plan: "Monthly",
-    payment: "completed",
-  },
-  {
-    id: "#BK-9078",
-    customer: "Rachel Nguyen",
-    email: "rachel@gmail.com",
-    initial: "R",
-    avatarColor: "#ca8a04",
-    agent: "Green Blade Lawn",
-    service: "Fertilization",
-    schedule: "Yesterday-2:30 PM",
-    amount: "$630",
-    plan: "One-time",
-    payment: "ongoing",
-  },
-];
 
 const COLUMNS = [
   "Booking ID",
@@ -120,7 +36,29 @@ const COLUMNS = [
   "Payment Status",
 ] as const;
 
+// How many of the most recent bookings the dashboard card shows.
+const ROWS_SHOWN = 6;
+
+// Placeholder for a column whose data the backend doesn't expose yet.
+const Empty = () => <span className="text-muted-foreground">—</span>;
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function planLabel(frequency: string) {
+  return FREQUENCY_LABELS[frequency as Frequency]?.title ?? capitalize(frequency);
+}
+
 export function RecentBookings() {
+  const { data, isLoading, isError, refetch } = useAdminBookings({
+    page: 1,
+    pageSize: ROWS_SHOWN,
+  });
+
+  const bookings = data?.items ?? [];
+  const isEmpty = !isLoading && !isError && bookings.length === 0;
+
   return (
     <section className="bg-card flex flex-col gap-6 rounded-xl p-6 shadow-[0px_4px_8px_0px_rgba(74,74,74,0.1)]">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -138,73 +76,134 @@ export function RecentBookings() {
         </Link>
       </div>
 
-      <div className="border-border overflow-x-auto rounded-xl border">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-border border-b">
-              {COLUMNS.map((col) => (
-                <th
-                  key={col}
-                  className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
-                >
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {ROWS.map((row, i) => (
-              <tr
-                key={i}
-                className={cn(
-                  "align-middle",
-                  i !== ROWS.length - 1 && "border-border border-b",
-                )}
-              >
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {row.id}
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white"
-                      style={{ backgroundColor: row.avatarColor }}
-                    >
-                      {row.initial}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold whitespace-nowrap">
-                        {row.customer}
-                      </p>
-                      <p className="text-muted-foreground text-sm whitespace-nowrap">
-                        {row.email}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {row.agent}
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {row.service}
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {row.schedule}
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
-                  {row.amount}
-                </td>
-                <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
-                  {row.plan}
-                </td>
-                <td className="px-5 py-4">
-                  <PaymentStatusBadge payment={row.payment} />
-                </td>
+      {isError ? (
+        <div className="border-border flex flex-col items-center gap-3 rounded-xl border px-6 py-14 text-center">
+          <p className="text-foreground text-sm font-semibold">
+            We couldn&apos;t load recent bookings.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Please check your connection and try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="border-border bg-background hover:bg-accent mt-1 h-10 rounded-lg border px-4 text-sm font-medium transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      ) : isEmpty ? (
+        <div className="border-border flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-14 text-center">
+          <span className="bg-accent text-muted-foreground flex size-14 items-center justify-center rounded-full">
+            <CalendarRange className="size-7" />
+          </span>
+          <p className="text-foreground text-base font-semibold">No bookings yet</p>
+          <p className="text-muted-foreground max-w-sm text-sm">
+            Bookings will appear here as customers schedule lawn services on the platform.
+          </p>
+        </div>
+      ) : (
+        <div className="border-border overflow-x-auto rounded-xl border">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-border border-b">
+                {COLUMNS.map((col) => (
+                  <th
+                    key={col}
+                    className="text-muted-foreground px-5 py-4 text-[13px] font-semibold whitespace-nowrap"
+                  >
+                    {col}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {isLoading
+                ? Array.from({ length: ROWS_SHOWN }).map((_, i) => (
+                    <tr
+                      key={i}
+                      className={cn(
+                        "align-middle",
+                        i !== ROWS_SHOWN - 1 && "border-border border-b",
+                      )}
+                    >
+                      <td className="px-5 py-4">
+                        <Skeleton className="h-3.5 w-20" />
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="size-10 shrink-0 rounded-full" />
+                          <div className="flex flex-col gap-1.5">
+                            <Skeleton className="h-3.5 w-28" />
+                            <Skeleton className="h-3 w-36" />
+                          </div>
+                        </div>
+                      </td>
+                      {Array.from({ length: COLUMNS.length - 2 }).map((_, j) => (
+                        <td key={j} className="px-5 py-4">
+                          <Skeleton className="h-3.5 w-16" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                : bookings.map((b, i) => (
+                    <BookingRow key={b.id} booking={b} last={i === bookings.length - 1} />
+                  ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
+  );
+}
+
+function BookingRow({ booking, last }: { booking: AdminBookingListItem; last: boolean }) {
+  const { customer } = booking;
+  return (
+    <tr className={cn("align-middle", !last && "border-border border-b")}>
+      <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+        {booking.reference}
+      </td>
+      <td className="px-5 py-4">
+        {customer ? (
+          <div className="flex items-center gap-3">
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-base font-medium text-white uppercase"
+              style={{ backgroundColor: avatarColor(customer.id) }}
+            >
+              {getInitials(customer.name, customer.email)}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold whitespace-nowrap">
+                {customer.name || "Unnamed customer"}
+              </p>
+              <p className="text-muted-foreground text-sm whitespace-nowrap">
+                {customer.email}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <Empty />
+        )}
+      </td>
+      {/* Agent — not exposed by the bookings list API yet. */}
+      <td className="px-5 py-4 text-sm whitespace-nowrap">
+        <Empty />
+      </td>
+      {/* Service — the app only sells lawn mowing; cadence lives in the Plan column. */}
+      <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">Lawn Mowing</td>
+      <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+        {formatScheduleDate(booking.scheduleDate)} · {capitalize(booking.timeSlot)}
+      </td>
+      <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
+        {formatCents(booking.totalPerVisit * 100)}
+      </td>
+      <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+        {planLabel(booking.frequency)}
+      </td>
+      <td className="px-5 py-4">
+        <BookingStatusBadge status={booking.status} />
+      </td>
+    </tr>
   );
 }

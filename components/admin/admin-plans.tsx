@@ -52,10 +52,7 @@ export function AdminPlans() {
                   </span>
                 </div>
                 <p className="text-lawn-text-secondary truncate text-sm tracking-tight">
-                  {planBillingLabel(plan)} ·{" "}
-                  {plan.areaTiers.length === 1
-                    ? "1 area tier"
-                    : `${plan.areaTiers.length} area tiers`}
+                  {planBillingLabel(plan)} · {formatCents(plan.basePrice)} base
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-3">
