@@ -5,11 +5,22 @@ import { Bell, CalendarRange, CheckCircle2, Plus } from "lucide-react";
 
 import { AdminPagination } from "@/components/admin/admin-pagination";
 import { InviteAgentModal } from "@/components/admin/invite-agent-modal";
+import { BookingStatusBadge } from "@/components/dashboard/booking-status-badge";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 import { avatarColor, getInitials } from "@/components/dashboard/user-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminBookings } from "@/hooks/use-admin";
+import { formatCents, formatScheduleDate } from "@/lib/jobs";
+import { FREQUENCY_LABELS, type Frequency } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function planLabel(frequency: string) {
+  return FREQUENCY_LABELS[frequency as Frequency]?.title ?? capitalize(frequency);
+}
 
 /**
  * Super Admin → Bookings screen (Figma node 1021:3921).
@@ -197,29 +208,29 @@ export function AdminBookings() {
                             <Empty />
                           )}
                         </td>
-                        {/* Agent — not exposed by the bookings API yet. */}
+                        {/* Agent — the agent on the earliest visit. */}
                         <td className="px-5 py-4 text-sm whitespace-nowrap">
-                          <Empty />
+                          {b.agent ? (
+                            b.agent.name || b.agent.email
+                          ) : (
+                            <span className="text-muted-foreground">Unassigned</span>
+                          )}
                         </td>
-                        {/* Service — defaults to Lawn Mowing until per-service data exists. */}
+                        {/* Service — the app only sells lawn mowing. */}
                         <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
                           Lawn Mowing
                         </td>
-                        {/* Schedule Time — not wired yet. */}
-                        <td className="px-5 py-4 text-sm whitespace-nowrap">
-                          <Empty />
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+                          {formatScheduleDate(b.scheduleDate)} · {capitalize(b.timeSlot)}
                         </td>
-                        {/* Amount — not wired yet. */}
-                        <td className="px-5 py-4 text-sm whitespace-nowrap tabular-nums">
-                          <Empty />
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap tabular-nums">
+                          {formatCents(b.amountCharged ?? b.totalPerVisit * 100)}
                         </td>
-                        {/* Plan — not wired yet. */}
-                        <td className="px-5 py-4 text-sm whitespace-nowrap">
-                          <Empty />
+                        <td className="px-5 py-4 text-sm font-semibold whitespace-nowrap">
+                          {b.planName ?? planLabel(b.frequency)}
                         </td>
-                        {/* Payment Status — not wired yet. */}
-                        <td className="px-5 py-4 text-sm whitespace-nowrap">
-                          <Empty />
+                        <td className="px-5 py-4">
+                          <BookingStatusBadge status={b.status} />
                         </td>
                       </tr>
                     ))}

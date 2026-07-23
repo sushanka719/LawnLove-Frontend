@@ -2,82 +2,35 @@
 
 import { useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ChevronRight, Clock, Leaf, Plus, TrendingUp } from "lucide-react";
 
-import { ConnectBanner } from "@/components/agent/connect-banner";
-import {
-  DashboardSearch,
-  GradientButton,
-  NotificationBell,
-} from "@/components/dashboard/dashboard-actions";
-import { JobStatusBadge } from "@/components/jobs/job-status-badge";
+import { AgentTopbar } from "@/components/agent/agent-topbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAgentJobs, useConnectStatus } from "@/hooks/use-agent";
-import type { AgentJob, JobStatus } from "@/lib/api/agent";
-import { formatCents, formatScheduleDate, TIME_SLOT_LABELS } from "@/lib/jobs";
+import { useAgentSchedule, useAgentStats } from "@/hooks/use-agent";
+import type { AgentScheduleVisit } from "@/lib/api/agent";
+import {
+  JOB_STATUS_LABELS,
+  JOB_STATUS_STYLES,
+  TIME_SLOT_LABELS,
+  formatCents,
+} from "@/lib/jobs";
 
-// Active work the agent still has to do vs. everything already in the past.
-const ACTIVE_STATUSES = new Set<JobStatus>(["assigned", "started"]);
-// Statuses that count as a paid/earning visit for the "Completed" stat.
-const EARNED_STATUSES = new Set<JobStatus>(["completed", "released", "paid"]);
-
+// Agent (crew owner) dashboard — live stat cards + a grouped-day schedule of the
+// agent's upcoming visits (this is the agent's view of the scheduler).
 export function AgentDashboard() {
-  const { data: jobs, isLoading, isError } = useAgentJobs();
-  const { data: connect } = useConnectStatus();
   const today = useTodayLabel();
-
-  const active = jobs?.filter((j) => ACTIVE_STATUSES.has(j.status)) ?? [];
-  const past = jobs?.filter((j) => !ACTIVE_STATUSES.has(j.status)) ?? [];
-  const nextJob = active.reduce<AgentJob | undefined>((soonest, j) => {
-    if (!soonest) return j;
-    return new Date(j.booking.scheduleDate) < new Date(soonest.booking.scheduleDate)
-      ? j
-      : soonest;
-  }, undefined);
-  const earned = past.filter((j) => EARNED_STATUSES.has(j.status));
-  const earnedTotalCents = earned.reduce(
-    (sum, j) => sum + j.booking.totalPerVisit * 100,
-    0,
-  );
 
   return (
     <div className="bg-lawn-bg-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl shadow-[0px_0px_12px_2px_rgba(116,116,116,0.1)]">
-      {/* Topbar */}
-      <header className="flex shrink-0 flex-col gap-4 border-b border-[#cecece]/40 px-6 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div className="min-w-0">
-          <h1 className="text-lawn-primary text-2xl font-bold tracking-tight">
-            Welcome Back!
-          </h1>
-          <p className="text-lawn-text-primary text-lg tracking-tight">{today}</p>
-        </div>
-        <div className="flex items-center gap-4 lg:gap-5">
-          <DashboardSearch />
-          <NotificationBell />
-          <GradientButton icon={Plus}>Invite agent</GradientButton>
-        </div>
-      </header>
+      <AgentTopbar
+        title="Welcome Back!"
+        subtitle={today}
+        showSearch={false}
+        showAction={false}
+      />
 
-      {/* Content */}
-      <div className="flex flex-col gap-8 p-6 lg:p-8">
-        {connect && !connect.payoutsEnabled && <ConnectBanner />}
-
-        {isError ? (
-          <p className="text-destructive text-base">
-            We couldn&apos;t load your dashboard. Please refresh and try again.
-          </p>
-        ) : (
-          <>
-            <StatCards
-              isLoading={isLoading}
-              nextJob={nextJob}
-              activeCount={active.length}
-              completedCount={earned.length}
-              earnedTotalCents={earnedTotalCents}
-            />
-            <UpcomingSection isLoading={isLoading} jobs={active} />
-            <PastVisitSection isLoading={isLoading} jobs={past} />
-          </>
-        )}
+      <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
+        <StatCards />
+        <ScheduleList />
       </div>
     </div>
   );
@@ -87,191 +40,186 @@ export function AgentDashboard() {
 /* Stat cards                                                                 */
 /* -------------------------------------------------------------------------- */
 
-function StatCards({
-  isLoading,
-  nextJob,
-  activeCount,
-  completedCount,
-  earnedTotalCents,
-}: {
-  isLoading: boolean;
-  nextJob: AgentJob | undefined;
-  activeCount: number;
-  completedCount: number;
-  earnedTotalCents: number;
-}) {
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Skeleton className="h-[132px] w-full rounded-2xl" />
-        <Skeleton className="h-[132px] w-full rounded-2xl" />
-        <Skeleton className="h-[132px] w-full rounded-2xl sm:col-span-2 xl:col-span-1" />
+function StatCards() {
+  const { data, isLoading } = useAgentStats();
+
+  const cards = [
+    { label: "Today's visits", value: data?.todayVisits },
+    { label: "Unassigned", value: data?.unassigned },
+    { label: "Completed this week", value: data?.weekCompleted },
+    { label: "Active crew", value: data?.activeCrew },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => (
+        <div
+          key={card.label}
+          className="bg-lawn-bg-2 flex flex-col gap-1.5 rounded-xl p-6 drop-shadow-[0px_4px_8px_rgba(74,74,74,0.14)]"
+        >
+          <p className="text-lawn-text-tertiary text-base tracking-tight">{card.label}</p>
+          {isLoading ? (
+            <Skeleton className="h-8 w-12" />
+          ) : (
+            <p className="text-lawn-text-primary text-2xl font-semibold tracking-tight">
+              {card.value ?? 0}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Grouped-day schedule                                                       */
+/* -------------------------------------------------------------------------- */
+
+function ScheduleList() {
+  const { data, isLoading, isError } = useAgentSchedule();
+
+  const groups = groupByDay(data ?? []);
+
+  return (
+    <section className="bg-lawn-bg-2 flex flex-col gap-6 rounded-xl p-6 drop-shadow-[0px_4px_8px_rgba(74,74,74,0.14)]">
+      <div className="flex flex-wrap items-center justify-between gap-5">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lawn-text-primary text-xl font-semibold tracking-tight">
+            Schedule
+          </h2>
+          <p className="text-lawn-text-tertiary text-lg tracking-tight">
+            Upcoming visits across your crew.
+          </p>
+        </div>
+        <Link
+          href="/agent/jobs"
+          className="border-lawn-primary-light text-lawn-primary hover:bg-lawn-primary-light/10 shrink-0 rounded-xl border-[1.2px] px-8 py-3 text-base font-semibold tracking-tight whitespace-nowrap transition-colors"
+        >
+          View all jobs
+        </Link>
       </div>
-    );
+
+      {isLoading && (
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          ))}
+        </div>
+      )}
+
+      {isError && (
+        <p className="text-lawn-text-secondary py-6 text-center">
+          Couldn&apos;t load the schedule.
+        </p>
+      )}
+
+      {data && data.length === 0 && (
+        <p className="text-lawn-text-secondary py-10 text-center">
+          No upcoming visits scheduled.
+        </p>
+      )}
+
+      {groups.map((group) => (
+        <div key={group.key} className="flex flex-col gap-2">
+          <h3 className="text-lawn-primary text-base font-semibold tracking-tight">
+            {group.label}
+          </h3>
+          <div className="overflow-hidden rounded-xl border border-[#cecece]">
+            {group.visits.map((visit, i) => (
+              <VisitRow
+                key={visit.id}
+                visit={visit}
+                last={i === group.visits.length - 1}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function VisitRow({ visit, last }: { visit: AgentScheduleVisit; last: boolean }) {
+  return (
+    <Link
+      href={`/agent/jobs/${visit.id}`}
+      className={`flex flex-wrap items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-black/[0.02] ${
+        last ? "" : "border-b border-[#e1e1e1]"
+      }`}
+    >
+      <div className="min-w-0">
+        <p className="text-lawn-text-primary text-base font-semibold tracking-tight">
+          {visit.booking.address}
+        </p>
+        <p className="text-lawn-text-tertiary text-sm tracking-tight">
+          {TIME_SLOT_LABELS[visit.booking.timeSlot] ?? visit.booking.timeSlot}
+          {visit.booking.customerName ? ` · ${visit.booking.customerName}` : ""}
+          {" · "}
+          {formatCents(visit.booking.totalPerVisit * 100)}
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        {visit.employee ? (
+          <span className="text-lawn-text-secondary text-sm font-medium">
+            {visit.employee.name}
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+            Unassigned
+          </span>
+        )}
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${JOB_STATUS_STYLES[visit.status]}`}
+        >
+          {JOB_STATUS_LABELS[visit.status]}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Grouping helpers                                                           */
+/* -------------------------------------------------------------------------- */
+
+type DayGroup = { key: string; label: string; visits: AgentScheduleVisit[] };
+
+function groupByDay(visits: AgentScheduleVisit[]): DayGroup[] {
+  const groups = new Map<string, AgentScheduleVisit[]>();
+  for (const v of visits) {
+    const key = v.scheduledDate ? v.scheduledDate.slice(0, 10) : "unscheduled";
+    const arr = groups.get(key) ?? [];
+    arr.push(v);
+    groups.set(key, arr);
   }
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, v]) => ({ key, label: dayLabel(key), visits: v }));
+}
 
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {/* Next visit */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#2d5a27]/10 bg-white p-6 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)]">
-        <div className="absolute -top-7 right-6 size-24 rounded-full bg-[#2d5a27] opacity-5" />
-        <p className="text-lawn-text-secondary relative text-base tracking-tight">
-          NEXT VISIT
-        </p>
-        <p className="text-lawn-text-primary relative mt-3 text-[32px] font-bold tracking-tight">
-          {nextJob ? formatShortDate(nextJob.booking.scheduleDate) : "—"}
-        </p>
-        <div className="text-lawn-text-secondary relative mt-1.5 flex items-center gap-1.5 text-base tracking-tight">
-          <Clock className="size-5 shrink-0" strokeWidth={1.75} />
-          {nextJob ? daysUntil(nextJob.booking.scheduleDate) : "Nothing scheduled"}
-        </div>
-      </div>
-
-      {/* Active jobs */}
-      <div className="bg-lawn-primary relative overflow-hidden rounded-2xl p-6 text-white shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)]">
-        <div className="absolute top-13 right-6 size-28 rounded-full bg-white opacity-10" />
-        <p className="relative text-base tracking-tight">ACTIVE JOBS</p>
-        <p className="relative mt-3 text-[32px] font-bold tracking-tight">
-          {activeCount}
-        </p>
-        <p className="relative mt-1.5 text-base tracking-tight">
-          {activeCount === 1 ? "Job assigned to you" : "Jobs assigned to you"}
-        </p>
-      </div>
-
-      {/* Completed / earnings */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#2d5a27]/10 bg-white p-6 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] sm:col-span-2 xl:col-span-1">
-        <div className="absolute -top-7 right-6 size-24 rounded-full bg-[#4a8c3f] opacity-5" />
-        <p className="text-lawn-text-secondary relative text-base tracking-tight">
-          Completed
-        </p>
-        <p className="text-lawn-text-primary relative mt-3 text-[32px] font-bold tracking-tight">
-          {completedCount}
-        </p>
-        <div className="text-lawn-text-secondary relative mt-1.5 flex items-center gap-1.5 text-base tracking-tight">
-          <TrendingUp className="size-5 shrink-0" strokeWidth={1.75} />
-          {formatCents(earnedTotalCents)} earned
-        </div>
-      </div>
-    </div>
-  );
+function dayLabel(key: string): string {
+  if (key === "unscheduled") return "Unscheduled";
+  const date = new Date(`${key}T00:00:00`);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  const same = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (same(date, today)) return "Today";
+  if (same(date, tomorrow)) return "Tomorrow";
+  return date.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 /* -------------------------------------------------------------------------- */
-/* Upcoming                                                                   */
+/* Date helper                                                                */
 /* -------------------------------------------------------------------------- */
 
-function UpcomingSection({ isLoading, jobs }: { isLoading: boolean; jobs: AgentJob[] }) {
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-lawn-text-primary text-xl font-semibold tracking-tight">
-        Upcoming
-      </h2>
-      {isLoading ? (
-        <Skeleton className="h-24 w-full rounded-xl" />
-      ) : jobs.length === 0 ? (
-        <EmptyState>No upcoming visits.</EmptyState>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {jobs.map((job) => (
-            <Link
-              key={job.id}
-              href={`/agent/jobs/${job.id}`}
-              className="bg-lawn-bg-2 flex items-center gap-4 rounded-xl p-5 drop-shadow-[0px_4px_8px_rgba(74,74,74,0.14)] transition hover:opacity-90"
-            >
-              <VisitLead job={job} />
-              <VisitTrailing job={job} />
-            </Link>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Past visits                                                                */
-/* -------------------------------------------------------------------------- */
-
-function PastVisitSection({ isLoading, jobs }: { isLoading: boolean; jobs: AgentJob[] }) {
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-lawn-text-primary text-xl font-semibold tracking-tight">
-        Past Visit
-      </h2>
-      {isLoading ? (
-        <Skeleton className="h-40 w-full rounded-xl" />
-      ) : jobs.length === 0 ? (
-        <EmptyState>No past visits yet.</EmptyState>
-      ) : (
-        <div className="bg-lawn-bg-2 overflow-hidden rounded-xl shadow-[0px_4px_16px_0px_rgba(74,74,74,0.14)]">
-          {jobs.map((job) => (
-            <Link
-              key={job.id}
-              href={`/agent/jobs/${job.id}`}
-              className="flex items-center gap-4 border-b border-[#cecece]/40 px-6 py-5 transition last:border-b-0 hover:bg-black/[0.02]"
-            >
-              <VisitLead job={job} />
-              <VisitTrailing job={job} />
-            </Link>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Shared visit-row pieces                                                    */
-/* -------------------------------------------------------------------------- */
-
-function VisitLead({ job }: { job: AgentJob }) {
-  const timeSlot =
-    TIME_SLOT_LABELS[job.booking.timeSlot]?.split(" (")[0] ?? job.booking.timeSlot;
-  return (
-    <div className="flex min-w-0 flex-1 items-center gap-4">
-      <div className="bg-lawn-badge-bg flex size-14 shrink-0 items-center justify-center rounded-xl">
-        <Leaf className="text-lawn-primary size-6" strokeWidth={1.75} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-lawn-text-primary truncate text-lg font-semibold tracking-tight">
-          {job.booking.address}
-        </p>
-        <p className="text-lawn-text-secondary truncate text-base">
-          {formatScheduleDate(job.booking.scheduleDate)} · {timeSlot}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function VisitTrailing({ job }: { job: AgentJob }) {
-  return (
-    <div className="flex shrink-0 items-center gap-3 sm:gap-4">
-      <JobStatusBadge status={job.status} />
-      <span className="text-lawn-text-primary hidden text-lg font-semibold tracking-tight sm:inline">
-        {formatCents(job.booking.totalPerVisit * 100)}
-      </span>
-      <ChevronRight className="text-lawn-text-secondary size-5 shrink-0" />
-    </div>
-  );
-}
-
-function EmptyState({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-lawn-text-secondary rounded-xl border border-[#cecece]/60 px-5 py-8 text-center text-base">
-      {children}
-    </p>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Date helpers                                                               */
-/* -------------------------------------------------------------------------- */
-
-// Today's date, resolved on the client only (empty on the server) so the user's
-// local date renders without a hydration mismatch. Returning an equal string on
-// every snapshot keeps useSyncExternalStore stable.
 const noopSubscribe = () => () => {};
 
 function useTodayLabel(): string {
@@ -286,29 +234,4 @@ function useTodayLabel(): string {
       }),
     () => "",
   );
-}
-
-// "Jun 30" — short month + day, matching the stat-card treatment.
-function formatShortDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-// Human relative day ("Today", "Tomorrow", "In 4 days", "2 days ago").
-function daysUntil(iso: string): string {
-  const target = new Date(iso);
-  if (Number.isNaN(target.getTime())) return "";
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const startOfTarget = new Date(target);
-  startOfTarget.setHours(0, 0, 0, 0);
-  const diffDays = Math.round(
-    (startOfTarget.getTime() - startOfToday.getTime()) / 86_400_000,
-  );
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  if (diffDays > 1) return `In ${diffDays} days`;
-  if (diffDays === -1) return "Yesterday";
-  return `${Math.abs(diffDays)} days ago`;
 }

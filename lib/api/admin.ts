@@ -148,9 +148,12 @@ export type AdminBookingListItem = {
   scheduleDate: string;
   timeSlot: string;
   totalPerVisit: number;
+  amountCharged: number | null; // cents, set by the Stripe webhook
   status: BookingStatus;
   createdAt: string;
   customer: PersonRef;
+  planName: string | null;
+  agent: PersonRef; // the agent on the earliest visit
   visitsCount: number;
 };
 
@@ -236,10 +239,16 @@ export type AdminJobDetail = {
   platformFee: number | null;
   chargedAt: string | null;
   releasedAt: string | null;
+  agentPayoutAmount: number | null;
+  agentPaidAt: string | null;
+  agentPayoutRef: string | null;
   stripePaymentIntentId: string | null;
   stripeTransferId: string | null;
   reference: string;
   agent: PersonRef;
+  employee: { id: string; name: string } | null;
+  // The agent's active crew — options for the reassign dropdown.
+  agentEmployees: { id: string; name: string }[];
   booking: {
     id: string;
     title: string;
@@ -281,6 +290,95 @@ export function assignJob(id: string, agentId: string) {
 
 export function refundJob(id: string) {
   return http.post<{ id: string; status: JobStatus }>(`/admin/jobs/${id}/refund`);
+}
+
+// Set/clear a job's field-worker (employee), or `auto` to re-run the scheduler.
+export function reassignJob(
+  id: string,
+  body: { employeeId?: string | null; auto?: boolean },
+) {
+  return http.post<{
+    id: string;
+    status: JobStatus;
+    agentId: string | null;
+    employeeId: string | null;
+    scheduledDate: string | null;
+    employee: { id: string; name: string } | null;
+  }>(`/admin/jobs/${id}/reassign`, body);
+}
+
+// Mark a completed visit's per-visit payout as paid (deferred manual model).
+export function payoutJob(id: string, ref?: string) {
+  return http.post<{ jobId: string; paid: boolean; amount: number }>(
+    `/admin/jobs/${id}/payout`,
+    ref ? { ref } : {},
+  );
+}
+
+// ---- Payouts ----
+
+export type AdminPayoutItem = {
+  jobId: string;
+  reference: string;
+  visitNumber: number;
+  serviceLabel: string;
+  address: string;
+  servicedOn: string | null;
+  amount: number; // cents
+  paid: boolean;
+  paidAt: string | null;
+  payoutRef: string | null;
+  agent: PersonRef;
+};
+
+export type AdminPayouts = {
+  items: AdminPayoutItem[];
+  totals: { owedCents: number; paidCents: number };
+  byAgent: {
+    agentId: string | null;
+    name: string | null;
+    email: string | null;
+    owedCents: number;
+    owedCount: number;
+  }[];
+};
+
+export function getAdminPayouts() {
+  return http.get<AdminPayouts>("/admin/payouts");
+}
+
+// ---- Settings ----
+
+export type AdminSettings = {
+  platformName: string;
+  supportEmail: string | null;
+  platformFeePct: number; // 0..1
+  payoutsEnabled: boolean;
+  payoutSchedule: string; // manual | daily | weekly
+  updatedAt: string;
+};
+
+export type UpdateSettingsInput = Partial<Omit<AdminSettings, "updatedAt">>;
+
+export function getAdminSettings() {
+  return http.get<AdminSettings>("/admin/settings");
+}
+
+export function updateAdminSettings(body: UpdateSettingsInput) {
+  return http.put<AdminSettings>("/admin/settings", body);
+}
+
+// ---- Revenue series ----
+
+export type AdminRevenue = {
+  range: string;
+  granularity: "day" | "month";
+  points: { date: string; revenueCents: number }[];
+};
+
+export function getAdminRevenue(range?: string) {
+  const qs = range ? `?range=${range}` : "";
+  return http.get<AdminRevenue>(`/admin/stats/revenue${qs}`);
 }
 
 // ---- Disputes ----

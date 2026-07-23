@@ -193,7 +193,7 @@ export function AgentJobDetail() {
 function BackLink() {
   return (
     <Link
-      href="/agent"
+      href="/agent/jobs"
       className="text-lawn-text-secondary hover:text-lawn-primary inline-flex w-fit items-center gap-1.5 text-sm font-medium"
     >
       <ArrowLeft className="size-4" />

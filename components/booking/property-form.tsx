@@ -8,7 +8,7 @@ import { PropertyMap } from "@/components/booking/property-map";
 import { BOOKING_STEPS } from "@/lib/booking-steps";
 import { MAX_LAWN_AREA_SQ_FT, polygonAreaSqFt, type LatLng } from "@/lib/geo";
 import { geocodeAddress } from "@/lib/mapbox";
-import { computeBasePrice, ESTIMATED_AREA_FACTOR } from "@/lib/pricing";
+import { ESTIMATED_AREA_FACTOR } from "@/lib/pricing";
 import { useBookingStore } from "@/lib/store/booking-store";
 
 export function PropertyForm() {
@@ -22,7 +22,6 @@ export function PropertyForm() {
 
   const areaSqFt = useMemo(() => polygonAreaSqFt(points), [points]);
   const estimatedAreaSqFt = Math.round(areaSqFt * ESTIMATED_AREA_FACTOR);
-  const totalPrice = computeBasePrice(estimatedAreaSqFt);
 
   // Coordinates are only captured on the address step when the user picks a
   // geocode suggestion. If they typed the address manually (or arrived from the
@@ -97,7 +96,9 @@ export function PropertyForm() {
   const handleClear = () => setPoints([]);
 
   const handleContinue = () => {
-    setProperty({ boundary: points, areaSqFt, estimatedAreaSqFt, totalPrice });
+    // Pricing is plan-based (chosen on the schedule step), so no price is set
+    // here — totalPrice stays 0 until a plan is selected.
+    setProperty({ boundary: points, areaSqFt, estimatedAreaSqFt, totalPrice: 0 });
     router.push(BOOKING_STEPS[2].path);
   };
 
@@ -164,11 +165,7 @@ export function PropertyForm() {
           </div>
         )}
 
-        <MeasuredAreaCard
-          areaSqFt={areaSqFt}
-          estimatedAreaSqFt={estimatedAreaSqFt}
-          totalPrice={totalPrice}
-        />
+        <MeasuredAreaCard areaSqFt={areaSqFt} estimatedAreaSqFt={estimatedAreaSqFt} />
 
         <div className="flex w-full flex-col gap-4">
           <button

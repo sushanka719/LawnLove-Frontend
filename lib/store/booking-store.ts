@@ -46,11 +46,17 @@ type BookingState = {
   pricing: PricingData;
   plan: PlanSelection;
   schedule: ScheduleData;
+  // Applied promo code (uppercased) + its CENTS discount. "" = none. The server
+  // recomputes the discount from the code on POST /bookings; these are
+  // display-only (drive the discounted amount shown at checkout).
+  promoCode: string;
+  promoDiscountCents: number;
   setAddress: (data: AddressData) => void;
   setProperty: (data: PropertyData) => void;
   setPricing: (data: PricingData) => void;
   setPlan: (data: PlanSelection) => void;
   setSchedule: (data: ScheduleData) => void;
+  setPromo: (code: string, discountCents: number) => void;
   reset: () => void;
 };
 
@@ -60,9 +66,17 @@ const initialState = {
   pricing: { subtotal: 0, frequency: "", discountPct: 0, totalPerVisit: 0 },
   plan: { planId: "", billingType: "", amountCents: 0 },
   schedule: { date: "", timeSlot: "" },
+  promoCode: "",
+  promoDiscountCents: 0,
 } satisfies Omit<
   BookingState,
-  "setAddress" | "setProperty" | "setPricing" | "setPlan" | "setSchedule" | "reset"
+  | "setAddress"
+  | "setProperty"
+  | "setPricing"
+  | "setPlan"
+  | "setSchedule"
+  | "setPromo"
+  | "reset"
 >;
 
 export const useBookingStore = create<BookingState>()(
@@ -87,15 +101,18 @@ export const useBookingStore = create<BookingState>()(
       setPricing: (data) => set({ pricing: data }),
       setPlan: (data) => set({ plan: data }),
       setSchedule: (data) => set({ schedule: data }),
+      setPromo: (code, discountCents) =>
+        set({ promoCode: code, promoDiscountCents: discountCents }),
       reset: () => set(initialState),
     }),
     {
       name: "lawnhate-booking",
       storage: createJSONStorage(() => sessionStorage),
       // v4: replaced the saved-card `payment` slice with a `plan` selection.
-      version: 4,
+      // v5: added the `promoCode` slice.
+      version: 5,
       migrate: (persisted, version) =>
-        version === 4 ? (persisted as BookingState) : initialState,
+        version === 5 ? (persisted as BookingState) : initialState,
     },
   ),
 );

@@ -6,17 +6,7 @@ import Link from "next/link";
 
 import { useBookingStore } from "@/lib/store/booking-store";
 import { useConfirmationStore } from "@/lib/store/confirmation-store";
-
-const TIME_WINDOW_RANGES: Record<string, string> = {
-  morning: "8:00-11:00 AM",
-  midday: "11:00 AM-2:00 PM",
-  afternoon: "2:00-5:00 PM",
-  evening: "5:00-7:00 PM",
-};
-
-function capitalize(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
+import { timeSlotLabel } from "@/lib/time-windows";
 
 function formatDate(dateKey: string) {
   if (!dateKey) return "";
@@ -51,9 +41,7 @@ export function BookingConfirmed() {
   }, [resetBooking]);
 
   const visitDuration = confirmation
-    ? `${formatDate(confirmation.date)} ${capitalize(confirmation.timeSlot)}(${
-        TIME_WINDOW_RANGES[confirmation.timeSlot] ?? ""
-      })`
+    ? `${formatDate(confirmation.date)} · ${timeSlotLabel(confirmation.timeSlot)}`
     : "";
 
   return (

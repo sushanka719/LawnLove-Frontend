@@ -16,19 +16,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/hooks/use-session";
 import { useCreateBooking } from "@/hooks/use-booking";
 import { ApiError } from "@/lib/api/http";
+import { formatCents } from "@/lib/jobs";
 import { FREQUENCY_LABELS, type Frequency } from "@/lib/pricing";
 import { getStripe, STRIPE_PUBLISHABLE_KEY } from "@/lib/stripe";
 import { useBookingStore } from "@/lib/store/booking-store";
 import { useConfirmationStore } from "@/lib/store/confirmation-store";
+import { TIME_WINDOW_RANGES } from "@/lib/time-windows";
 
 const stripePromise = getStripe();
-
-const TIME_WINDOW_RANGES: Record<string, string> = {
-  morning: "8:00 AM - 11:00 AM",
-  midday: "11:00 AM - 2:00 PM",
-  afternoon: "2:00 PM - 5:00 PM",
-  evening: "5:00 PM - 7:00 PM",
-};
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -54,8 +49,8 @@ function PaymentHeader() {
           Secure Payment
         </h1>
         <p className="text-lawn-text-secondary text-base leading-6">
-          Encrypted and secure. Your first payment is collected now to confirm
-          your booking.
+          Encrypted and secure. Your first payment is collected now to confirm your
+          booking.
         </p>
       </div>
     </div>
@@ -73,6 +68,8 @@ function PaymentFormBody() {
   const pricing = useBookingStore((state) => state.pricing);
   const plan = useBookingStore((state) => state.plan);
   const schedule = useBookingStore((state) => state.schedule);
+  const promoCode = useBookingStore((state) => state.promoCode);
+  const promoDiscountCents = useBookingStore((state) => state.promoDiscountCents);
 
   const setConfirmation = useConfirmationStore((state) => state.setConfirmation);
 
@@ -84,6 +81,7 @@ function PaymentFormBody() {
   const timeSlotLabel = schedule.timeSlot
     ? `${capitalize(schedule.timeSlot)} (${timeRange})`
     : "";
+  const netCents = Math.max(0, plan.amountCents - promoDiscountCents);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -110,6 +108,7 @@ function PaymentFormBody() {
         planId: plan.planId,
         date: schedule.date,
         timeSlot: schedule.timeSlot,
+        promoCode: promoCode || undefined,
       });
 
       // Charge now. redirect:'if_required' keeps card/Link inline (no redirect).
@@ -124,8 +123,7 @@ function PaymentFormBody() {
 
       if (confirmError) {
         toast.error(
-          confirmError.message ??
-            "We couldn't complete your payment. Please try again.",
+          confirmError.message ?? "We couldn't complete your payment. Please try again.",
         );
         return;
       }
@@ -190,7 +188,7 @@ function PaymentFormBody() {
           disabled={disabled}
           className="lawn-gradient-btn w-full rounded-xl px-8 py-3 text-base font-semibold text-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.25)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? "Processing..." : `Pay $${pricing.totalPerVisit}`}
+          {submitting ? "Processing..." : `Pay ${formatCents(netCents)}`}
         </button>
       </OrderSummarySidebar>
     </form>
@@ -212,6 +210,7 @@ export function PaymentForm() {
   const router = useRouter();
   const { data: session, isLoading: sessionLoading } = useSession();
   const plan = useBookingStore((state) => state.plan);
+  const promoDiscountCents = useBookingStore((state) => state.promoDiscountCents);
 
   // Booking submission requires a signed-in session — bounce guests to login
   // and bring them back to this step afterwards.
@@ -260,7 +259,8 @@ export function PaymentForm() {
 
   const options: StripeElementsOptions = {
     mode: plan.billingType === "recurring" ? "subscription" : "payment",
-    amount: plan.amountCents,
+    // Reflect any applied promo discount; the server is still authoritative.
+    amount: Math.max(0, plan.amountCents - promoDiscountCents),
     currency: "usd",
     // Card + Link only — matches the server-side payment_method_types so nothing
     // else can be entered. The server list is authoritative.

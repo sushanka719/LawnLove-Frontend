@@ -14,6 +14,8 @@ import {
   useAdminAgents,
   useAdminJob,
   useAssignJob,
+  usePayoutJob,
+  useReassignJob,
   useRefundJob,
 } from "@/hooks/use-admin";
 import type { AdminJobPhoto } from "@/lib/api/admin";
@@ -33,11 +35,7 @@ export function AdminJobDetail() {
   const { data: job, isLoading, isError } = useAdminJob(jobId);
 
   if (isError) {
-    return (
-      <p className="text-destructive text-base">
-        We couldn&apos;t load this job.
-      </p>
-    );
+    return <p className="text-destructive text-base">We couldn&apos;t load this job.</p>;
   }
 
   if (isLoading || !job) {
@@ -81,6 +79,12 @@ export function AdminJobDetail() {
       {/* Assignment */}
       <AssignmentCard job={job} />
 
+      {/* Crew (field-worker) reassignment */}
+      <CrewCard job={job} />
+
+      {/* Payout (deferred per-visit) */}
+      {job.agentPayoutAmount != null && <PayoutCard job={job} />}
+
       {/* Service + escrow */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <InfoCard title="Service">
@@ -113,23 +117,17 @@ export function AdminJobDetail() {
           />
           <Row
             label="Charged at"
-            value={
-              job.chargedAt ? new Date(job.chargedAt).toLocaleString() : "—"
-            }
+            value={job.chargedAt ? new Date(job.chargedAt).toLocaleString() : "—"}
           />
           <Row
             label="Review deadline"
             value={
-              job.reviewDeadline
-                ? new Date(job.reviewDeadline).toLocaleString()
-                : "—"
+              job.reviewDeadline ? new Date(job.reviewDeadline).toLocaleString() : "—"
             }
           />
           <Row
             label="Paid out"
-            value={
-              job.releasedAt ? new Date(job.releasedAt).toLocaleString() : "—"
-            }
+            value={job.releasedAt ? new Date(job.releasedAt).toLocaleString() : "—"}
           />
         </InfoCard>
       </div>
@@ -210,15 +208,12 @@ function AssignmentCard({
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="text-lawn-text-primary min-w-56 rounded-lg border border-[#cecece]/70 bg-white px-3 py-2 text-sm outline-none focus:border-lawn-primary/50"
+            className="text-lawn-text-primary focus:border-lawn-primary/50 min-w-56 rounded-lg border border-[#cecece]/70 bg-white px-3 py-2 text-sm outline-none"
           >
-            <option value="">
-              {job.agent ? "Reassign to…" : "Choose an agent…"}
-            </option>
+            <option value="">{job.agent ? "Reassign to…" : "Choose an agent…"}</option>
             {(agents ?? []).map((a) => (
               <option key={a.id} value={a.id}>
-                {(a.name || a.email) +
-                  (a.payoutsEnabled ? "" : " (payouts off)")}
+                {(a.name || a.email) + (a.payoutsEnabled ? "" : " (payouts off)")}
               </option>
             ))}
           </select>
@@ -227,17 +222,150 @@ function AssignmentCard({
             onClick={handleAssign}
             disabled={!selected || assign.isPending}
           >
-            {assign.isPending
-              ? "Assigning…"
-              : job.agent
-                ? "Reassign"
-                : "Assign"}
+            {assign.isPending ? "Assigning…" : job.agent ? "Reassign" : "Assign"}
           </Button>
         </div>
       ) : (
         <p className="text-lawn-text-tertiary text-sm tracking-tight">
           This job can no longer be reassigned (work is in progress or complete).
         </p>
+      )}
+    </div>
+  );
+}
+
+function CrewCard({ job }: { job: NonNullable<ReturnType<typeof useAdminJob>["data"]> }) {
+  const assignable = ASSIGNABLE.has(job.status);
+  const reassign = useReassignJob(job.id);
+  const [selected, setSelected] = useState("");
+
+  const run = (body: { employeeId?: string | null; auto?: boolean }, msg: string) => {
+    reassign.mutate(body, {
+      onSuccess: () => {
+        toast.success(msg);
+        setSelected("");
+      },
+      onError: (e) => toast.error(errMessage(e, "Couldn't update the crew.")),
+    });
+  };
+
+  return (
+    <div className="bg-lawn-bg-2 flex flex-col gap-4 rounded-2xl border border-[#cecece]/50 p-5 shadow-[0px_4px_16px_0px_rgba(74,74,74,0.08)]">
+      <div className="flex items-center gap-2">
+        <UserCheck className="text-lawn-primary size-5" />
+        <p className="text-lawn-text-primary text-base font-semibold tracking-tight">
+          Field crew
+        </p>
+      </div>
+      <p className="text-lawn-text-secondary text-sm tracking-tight">
+        {job.employee ? (
+          <>
+            Assigned to{" "}
+            <span className="text-lawn-text-primary font-semibold">
+              {job.employee.name}
+            </span>
+          </>
+        ) : (
+          "Unassigned — no crew member picked yet."
+        )}
+      </p>
+
+      {assignable ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            disabled={job.agentEmployees.length === 0}
+            className="text-lawn-text-primary focus:border-lawn-primary/50 min-w-56 rounded-lg border border-[#cecece]/70 bg-white px-3 py-2 text-sm outline-none disabled:opacity-60"
+          >
+            <option value="">
+              {job.agentEmployees.length === 0
+                ? "No crew for this agent"
+                : "Choose a crew member…"}
+            </option>
+            {job.agentEmployees.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+          <Button
+            size="lg"
+            onClick={() => run({ employeeId: selected }, "Crew updated.")}
+            disabled={!selected || reassign.isPending}
+          >
+            Set crew
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => run({ auto: true }, "Re-ran the scheduler.")}
+            disabled={reassign.isPending}
+          >
+            Auto-assign
+          </Button>
+          {job.employee && (
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => run({ employeeId: null }, "Crew cleared.")}
+              disabled={reassign.isPending}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+      ) : (
+        <p className="text-lawn-text-tertiary text-sm tracking-tight">
+          This visit can no longer be reassigned.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PayoutCard({
+  job,
+}: {
+  job: NonNullable<ReturnType<typeof useAdminJob>["data"]>;
+}) {
+  const payout = usePayoutJob();
+  const paid = job.agentPaidAt != null;
+
+  const handlePay = () => {
+    payout.mutate(
+      { id: job.id },
+      {
+        onSuccess: () => toast.success("Payout marked paid."),
+        onError: (e) => toast.error(errMessage(e, "Couldn't mark payout paid.")),
+      },
+    );
+  };
+
+  return (
+    <div className="bg-lawn-bg-2 flex flex-col gap-3 rounded-2xl border border-[#cecece]/50 p-5 shadow-[0px_4px_16px_0px_rgba(74,74,74,0.08)]">
+      <p className="text-lawn-text-primary text-base font-semibold tracking-tight">
+        Agent payout
+      </p>
+      <Row label="Owed to agent" value={formatCents(job.agentPayoutAmount ?? 0)} />
+      <Row
+        label="Status"
+        value={
+          paid
+            ? `Paid${job.agentPaidAt ? ` · ${new Date(job.agentPaidAt).toLocaleDateString()}` : ""}`
+            : "Owed"
+        }
+      />
+      {job.agentPayoutRef && <Row label="Reference" value={job.agentPayoutRef} />}
+      {!paid && (
+        <Button
+          size="lg"
+          className="w-fit"
+          onClick={handlePay}
+          disabled={payout.isPending}
+        >
+          {payout.isPending ? "Marking…" : "Mark paid"}
+        </Button>
       )}
     </div>
   );
@@ -299,13 +427,7 @@ function RefundCard({ jobId }: { jobId: string }) {
   );
 }
 
-function InfoCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-lawn-bg-2 flex flex-col gap-2.5 rounded-2xl border border-[#cecece]/50 p-5 shadow-[0px_4px_16px_0px_rgba(74,74,74,0.08)]">
       <p className="text-lawn-text-primary text-base font-semibold tracking-tight">
@@ -329,13 +451,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PhotoGallery({
-  title,
-  photos,
-}: {
-  title: string;
-  photos: AdminJobPhoto[];
-}) {
+function PhotoGallery({ title, photos }: { title: string; photos: AdminJobPhoto[] }) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-lawn-text-primary text-base font-semibold tracking-tight">
