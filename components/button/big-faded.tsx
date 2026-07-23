@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-const quoteButtonVariants = cva(
+const bigFadedButtonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-xl border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
@@ -23,19 +23,19 @@ const quoteButtonVariants = cva(
   },
 );
 
-function QuoteButton({
+function BigFadedButton({
   className,
   variant = "default",
   size = "default",
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof quoteButtonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof bigFadedButtonVariants>) {
   return (
     <ButtonPrimitive
-      data-slot="quote-button"
-      className={cn(quoteButtonVariants({ variant, size, className }))}
+      data-slot="button-big-faded"
+      className={cn(bigFadedButtonVariants({ variant, size, className }))}
       {...props}
     />
   );
 }
 
-export { QuoteButton, quoteButtonVariants };
+export { BigFadedButton, bigFadedButtonVariants };
