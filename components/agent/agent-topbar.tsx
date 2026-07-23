@@ -11,6 +11,8 @@ export function AgentTopbar({
   showSearch = true,
   actionLabel = "Add employee",
   actionIcon: ActionIcon = Plus,
+  onAction,
+  showAction = true,
 }: {
   title: string;
   subtitle: string;
@@ -20,6 +22,10 @@ export function AgentTopbar({
   actionLabel?: string;
   /** Icon for the primary gradient action (defaults to a plus). */
   actionIcon?: LucideIcon;
+  /** Click handler for the primary action. When omitted the button is inert. */
+  onAction?: () => void;
+  /** Hide the primary action button entirely (screens with no primary action). */
+  showAction?: boolean;
 }) {
   return (
     <header className="flex shrink-0 flex-col gap-4 border-b border-[#cecece]/40 px-6 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
@@ -50,13 +56,16 @@ export function AgentTopbar({
           <Bell className="size-7" strokeWidth={1.75} />
         </button>
 
-        <button
-          type="button"
-          className="lawn-gradient-btn flex shrink-0 items-center gap-2 rounded-xl px-6 py-3 text-base font-semibold tracking-tight whitespace-nowrap text-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.25)] transition-opacity hover:opacity-90"
-        >
-          <ActionIcon className="size-6" strokeWidth={2} />
-          {actionLabel}
-        </button>
+        {showAction && (
+          <button
+            type="button"
+            onClick={onAction}
+            className="lawn-gradient-btn flex shrink-0 items-center gap-2 rounded-xl px-6 py-3 text-base font-semibold tracking-tight whitespace-nowrap text-white shadow-[0px_5px_10px_0px_rgba(0,0,0,0.25)] transition-opacity hover:opacity-90"
+          >
+            <ActionIcon className="size-6" strokeWidth={2} />
+            {actionLabel}
+          </button>
+        )}
       </div>
     </header>
   );

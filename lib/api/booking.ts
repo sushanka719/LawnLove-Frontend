@@ -12,6 +12,9 @@ export type CreateBookingPayload = {
   planId: string;
   date: string;
   timeSlot: string;
+  // Optional promo code; the server recomputes the discount and ignores any
+  // client-sent amount.
+  promoCode?: string;
 };
 
 // The booking is created as `pendingPayment`; the client secret drives the
@@ -105,16 +108,16 @@ export function getBooking(id: string) {
   return http.get<BookingDetail>(`/bookings/${id}`);
 }
 
-// ---- Invoices (one per charged visit) ----
+// ---- Invoices (one per charged booking, prepaid model) ----
 
 export type InvoiceListItem = {
-  jobId: string;
+  id: string;
   invoiceNumber: string;
   serviceLabel: string;
   address: string;
   servicedOn: string;
   amount: number; // cents
-  refunded: boolean;
+  status: BookingStatus;
 };
 
 export function getInvoices(page = 1, pageSize = 10) {

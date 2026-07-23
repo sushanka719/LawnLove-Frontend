@@ -50,7 +50,7 @@ export function InvoiceList() {
       <div className="bg-lawn-bg-2 overflow-hidden rounded-xl shadow-[0px_4px_16px_0px_rgba(74,74,74,0.14)]">
         {invoices.map((invoice, i) => (
           <InvoiceRow
-            key={invoice.jobId}
+            key={invoice.id}
             invoice={invoice}
             last={i === invoices.length - 1}
           />
@@ -66,10 +66,25 @@ export function InvoiceList() {
   );
 }
 
+const STATUS_META: Record<string, { label: string; className: string }> = {
+  active: { label: "Paid", className: "bg-lawn-badge-bg text-lawn-primary" },
+  completed: { label: "Paid", className: "bg-lawn-badge-bg text-lawn-primary" },
+  pastDue: { label: "Past due", className: "bg-amber-100 text-amber-700" },
+  cancelled: {
+    label: "Cancelled",
+    className: "bg-neutral-200 text-neutral-600",
+  },
+  pendingPayment: {
+    label: "Pending",
+    className: "bg-amber-100 text-amber-700",
+  },
+};
+
 function InvoiceRow({ invoice, last }: { invoice: InvoiceListItem; last: boolean }) {
+  const status = STATUS_META[invoice.status] ?? STATUS_META.active;
   return (
     <Link
-      href={`/dashboard/jobs/${invoice.jobId}`}
+      href={`/dashboard/bookings/${invoice.id}`}
       className={cn(
         "flex items-center gap-4 px-6 py-5 transition hover:bg-black/[0.02] sm:gap-8",
         !last && "border-b border-[#cecece]/40",
@@ -86,17 +101,15 @@ function InvoiceRow({ invoice, last }: { invoice: InvoiceListItem; last: boolean
           {formatScheduleDate(invoice.servicedOn)}
         </p>
       </div>
-      {invoice.refunded ? (
-        <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-neutral-200 px-4 py-1.5 text-base font-medium tracking-tight text-neutral-600 sm:flex">
-          <span className="size-1.5 rounded-full bg-current opacity-70" />
-          Refunded
-        </span>
-      ) : (
-        <span className="bg-lawn-badge-bg text-lawn-primary hidden shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-base font-medium tracking-tight sm:flex">
-          <span className="bg-lawn-primary size-1.5 rounded-full" />
-          Paid
-        </span>
-      )}
+      <span
+        className={cn(
+          "hidden shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-base font-medium tracking-tight sm:flex",
+          status.className,
+        )}
+      >
+        <span className="size-1.5 rounded-full bg-current opacity-70" />
+        {status.label}
+      </span>
       <span className="text-lawn-text-primary shrink-0 text-lg font-semibold tracking-tight">
         {formatCents(invoice.amount)}
       </span>

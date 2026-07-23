@@ -18,11 +18,3 @@ export const addressStepSchema = z.object({
 });
 
 export type AddressStepValues = z.infer<typeof addressStepSchema>;
-
-export const scheduleStepSchema = z.object({
-  planId: z.string().trim().min(1, "Select a plan."),
-  date: z.string().trim().min(1, "Select a preferred date."),
-  timeSlot: z.string().trim().min(1, "Select a time slot."),
-});
-
-export type ScheduleStepValues = z.infer<typeof scheduleStepSchema>;
