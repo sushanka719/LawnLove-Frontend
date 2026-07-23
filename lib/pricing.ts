@@ -30,9 +30,10 @@ export function computeQuote(areaSqFt: number, frequency: Frequency) {
 }
 
 // ---- Plan-based pricing (base + area surcharge) --------------------------
-// Mirror of LawnBackend/src/booking/pricing.ts. All amounts here are in CENTS
-// (matching the Plan model). The server recomputes and is authoritative; this
-// is display-only. Keep in sync with the backend copy.
+// Mirror of LawnBackend/src/booking/pricing.ts. All amounts here are in CENTS.
+// The area surcharge ladder + maximum serviceable area are GLOBAL now (fetched
+// from /pricing-settings), not per-plan. The server recomputes and is
+// authoritative; this is display-only. Keep in sync with the backend copy.
 
 type PlanTier = { minSqFt: number; maxSqFt: number | null; surcharge: number };
 
@@ -41,19 +42,23 @@ type PlanTier = { minSqFt: number; maxSqFt: number | null; surcharge: number };
 export function surchargeForArea(tiers: PlanTier[], areaSqFt: number): number {
   const match = [...tiers]
     .sort((a, b) => a.minSqFt - b.minSqFt)
-    .find(
-      (t) =>
-        areaSqFt >= t.minSqFt && (t.maxSqFt == null || areaSqFt < t.maxSqFt),
-    );
+    .find((t) => areaSqFt >= t.minSqFt && (t.maxSqFt == null || areaSqFt < t.maxSqFt));
   return match ? match.surcharge : 0;
 }
 
-// Final per-visit quote in CENTS for a plan at a given (estimated) area.
+// Whether a lawn is larger than the business will service. maxAreaSqFt === null
+// means "no maximum" — nothing is ever rejected for size.
+export function isOverMaxArea(maxAreaSqFt: number | null, areaSqFt: number): boolean {
+  return maxAreaSqFt != null && areaSqFt > maxAreaSqFt;
+}
+
+// Final per-visit quote in CENTS: a plan's base price + the global area
+// surcharge bracket for the (estimated) measured area.
 export function computePlanQuote(
-  plan: { basePrice: number; areaTiers: PlanTier[] },
+  basePrice: number,
+  tiers: PlanTier[],
   estimatedAreaSqFt: number,
 ) {
-  const basePrice = plan.basePrice;
-  const areaSurcharge = surchargeForArea(plan.areaTiers, estimatedAreaSqFt);
+  const areaSurcharge = surchargeForArea(tiers, estimatedAreaSqFt);
   return { basePrice, areaSurcharge, totalPerVisit: basePrice + areaSurcharge };
 }

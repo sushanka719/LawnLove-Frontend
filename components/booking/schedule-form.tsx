@@ -7,10 +7,11 @@ import { Calendar } from "@/components/booking/calendar";
 import { MeasuredAreaCard } from "@/components/booking/measured-area-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePlans } from "@/hooks/use-plans";
+import { usePricingSettings } from "@/hooks/use-pricing-settings";
 import type { Plan } from "@/lib/api/plans";
 import { BOOKING_STEPS } from "@/lib/booking-steps";
 import { formatCents } from "@/lib/jobs";
-import { computePlanQuote, type Frequency } from "@/lib/pricing";
+import { computePlanQuote, isOverMaxArea, type Frequency } from "@/lib/pricing";
 import { planBillingLabel } from "@/lib/plans";
 import { useBookingStore } from "@/lib/store/booking-store";
 import { cn } from "@/lib/utils";
@@ -31,14 +32,31 @@ export function ScheduleForm() {
   const setPlan = useBookingStore((state) => state.setPlan);
   const setPricing = useBookingStore((state) => state.setPricing);
 
-  const { data: plans, isLoading, isError } = usePlans();
+  const { data: plans, isLoading: plansLoading, isError: plansError } = usePlans();
+  const {
+    data: pricing,
+    isLoading: pricingLoading,
+    isError: pricingError,
+  } = usePricingSettings();
+
+  const isLoading = plansLoading || pricingLoading;
+  const isError = plansError || pricingError;
+  const tiers = pricing?.areaTiers ?? [];
+
+  // Global maximum serviceable area — a lawn beyond it can't be booked (the
+  // server rejects it too). Block the whole step with a clear message.
+  const overMaxArea = isOverMaxArea(
+    pricing?.maxAreaSqFt ?? null,
+    property.estimatedAreaSqFt,
+  );
 
   const { date, timeSlot } = schedule;
-  const canContinue = Boolean(plan.planId && date && timeSlot);
+  const canContinue = Boolean(plan.planId && date && timeSlot) && !overMaxArea;
 
   const selectPlan = (selected: Plan) => {
     const { basePrice, totalPerVisit } = computePlanQuote(
-      selected,
+      selected.basePrice,
+      tiers,
       property.estimatedAreaSqFt,
     );
     setPlan({
@@ -47,9 +65,7 @@ export function ScheduleForm() {
       amountCents: totalPerVisit,
     });
     const frequency: Frequency =
-      selected.billingType === "oneTime"
-        ? "oneTime"
-        : (selected.interval ?? "oneTime");
+      selected.billingType === "oneTime" ? "oneTime" : (selected.interval ?? "oneTime");
     setPricing({
       subtotal: Math.round(basePrice / 100),
       frequency,
@@ -97,6 +113,16 @@ export function ScheduleForm() {
                 <Skeleton key={i} className="h-40 w-full rounded-xl" />
               ))}
             </div>
+          ) : overMaxArea ? (
+            <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-1 rounded-xl border p-5">
+              <p className="text-destructive text-base font-semibold">
+                This lawn is larger than we currently service.
+              </p>
+              <p className="text-lawn-text-secondary text-sm">
+                Please contact us for a custom quote — we&apos;d still love to help with a
+                property this size.
+              </p>
+            </div>
           ) : plans.length === 0 ? (
             <p className="text-lawn-text-secondary text-base">
               No plans are available right now. Please check back soon.
@@ -106,7 +132,8 @@ export function ScheduleForm() {
               {plans.map((option) => {
                 const isSelected = plan.planId === option.id;
                 const { totalPerVisit } = computePlanQuote(
-                  option,
+                  option.basePrice,
+                  tiers,
                   property.estimatedAreaSqFt,
                 );
                 return (
@@ -118,7 +145,7 @@ export function ScheduleForm() {
                       "flex flex-col items-start gap-2 rounded-xl border p-5 text-left transition",
                       isSelected
                         ? "bg-lawn-bg-1 border-lawn-primary shadow-[0_0_0_4px_rgba(25,81,52,0.2)]"
-                        : "border-[#cecece] hover:border-lawn-primary/50",
+                        : "hover:border-lawn-primary/50 border-[#cecece]",
                     )}
                   >
                     <div className="flex w-full items-start justify-between gap-2">
@@ -126,9 +153,7 @@ export function ScheduleForm() {
                         <p
                           className={cn(
                             "text-xl font-semibold",
-                            isSelected
-                              ? "text-lawn-primary"
-                              : "text-lawn-text-primary",
+                            isSelected ? "text-lawn-primary" : "text-lawn-text-primary",
                           )}
                         >
                           {option.name}

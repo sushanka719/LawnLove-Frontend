@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,11 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreatePlan, useUpdatePlan } from "@/hooks/use-plans";
 import { ApiError } from "@/lib/api/http";
-import type {
-  CreatePlanInput,
-  Plan,
-  PlanInterval,
-} from "@/lib/api/plans";
+import type { CreatePlanInput, Plan, PlanInterval } from "@/lib/api/plans";
 import { centsToDollarString, dollarsToCents } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import {
@@ -29,8 +26,7 @@ import {
 const selectClass =
   "border-input h-8 w-full rounded-lg border bg-transparent px-2.5 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
 
-const labelClass =
-  "text-lawn-text-secondary text-sm font-medium tracking-tight";
+const labelClass = "text-lawn-text-secondary text-sm font-medium tracking-tight";
 
 const INTERVAL_LABELS: Record<PlanInterval, string> = {
   weekly: "Weekly",
@@ -50,7 +46,6 @@ function toDefaults(plan?: Plan): PlanFormValues {
       active: true,
       sortOrder: "0",
       features: [{ value: "" }],
-      areaTiers: [{ minSqFt: "0", maxSqFt: "", surchargeDollars: "0" }],
     };
   }
   return {
@@ -65,11 +60,6 @@ function toDefaults(plan?: Plan): PlanFormValues {
     features: plan.features.length
       ? plan.features.map((f) => ({ value: f }))
       : [{ value: "" }],
-    areaTiers: plan.areaTiers.map((t) => ({
-      minSqFt: String(t.minSqFt),
-      maxSqFt: t.maxSqFt == null ? "" : String(t.maxSqFt),
-      surchargeDollars: centsToDollarString(t.surcharge),
-    })),
   };
 }
 
@@ -91,7 +81,6 @@ export function AdminPlanForm({ plan }: { plan?: Plan }) {
   });
 
   const features = useFieldArray({ control, name: "features" });
-  const areaTiers = useFieldArray({ control, name: "areaTiers" });
   const billingType = useWatch({ control, name: "billingType" });
 
   const onSubmit = async (values: PlanFormValues) => {
@@ -101,18 +90,11 @@ export function AdminPlanForm({ plan }: { plan?: Plan }) {
       description: values.description || undefined,
       billingType: values.billingType,
       interval:
-        values.billingType === "recurring"
-          ? (values.interval as PlanInterval)
-          : null,
+        values.billingType === "recurring" ? (values.interval as PlanInterval) : null,
       basePrice: dollarsToCents(values.basePriceDollars),
       features: values.features.map((f) => f.value.trim()).filter(Boolean),
       active: values.active,
       sortOrder: Number(values.sortOrder),
-      areaTiers: values.areaTiers.map((t) => ({
-        minSqFt: Number(t.minSqFt),
-        maxSqFt: t.maxSqFt.trim() === "" ? null : Number(t.maxSqFt),
-        surcharge: dollarsToCents(t.surchargeDollars),
-      })),
     };
 
     try {
@@ -140,9 +122,7 @@ export function AdminPlanForm({ plan }: { plan?: Plan }) {
     >
       {/* Details */}
       <fieldset className="flex flex-col gap-4">
-        <legend className="text-lawn-primary mb-2 text-lg font-semibold">
-          Details
-        </legend>
+        <legend className="text-lawn-primary mb-2 text-lg font-semibold">Details</legend>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="plan-name" className={labelClass}>
@@ -241,7 +221,13 @@ export function AdminPlanForm({ plan }: { plan?: Plan }) {
             {...register("basePriceDollars")}
           />
           <p className="text-lawn-text-tertiary text-xs">
-            Charged each visit before the area surcharge is added.
+            Charged each visit before the area surcharge is added. The area surcharge
+            tiers and maximum serviceable area are shared across all plans — edit them
+            under{" "}
+            <Link href="/admin/pricing" className="text-lawn-primary underline">
+              Pricing
+            </Link>
+            .
           </p>
           <FieldError>{errors.basePriceDollars?.message}</FieldError>
         </div>
@@ -249,9 +235,7 @@ export function AdminPlanForm({ plan }: { plan?: Plan }) {
 
       {/* Features */}
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-lawn-primary mb-1 text-lg font-semibold">
-          Features
-        </legend>
+        <legend className="text-lawn-primary mb-1 text-lg font-semibold">Features</legend>
         <p className="text-lawn-text-tertiary -mt-1 text-xs">
           Bullet points shown on the plan card. Empty rows are ignored.
         </p>
@@ -284,87 +268,9 @@ export function AdminPlanForm({ plan }: { plan?: Plan }) {
         </Button>
       </fieldset>
 
-      {/* Area tiers */}
-      <fieldset className="flex flex-col gap-3">
-        <legend className="text-lawn-primary mb-1 text-lg font-semibold">
-          Area surcharge tiers
-        </legend>
-        <p className="text-lawn-text-tertiary -mt-1 text-xs">
-          Non-overlapping, ascending brackets. The surcharge of the bracket the
-          measured lawn falls into is added to the base price. Leave the top
-          tier&apos;s max blank for no upper limit.
-        </p>
-
-        {areaTiers.fields.length > 0 && (
-          <div className="hidden grid-cols-[1fr_1fr_1fr_auto] gap-2 px-1 sm:grid">
-            <span className={labelClass}>Min sq ft</span>
-            <span className={labelClass}>Max sq ft</span>
-            <span className={labelClass}>Surcharge (USD)</span>
-            <span className="w-8" />
-          </div>
-        )}
-
-        {areaTiers.fields.map((field, i) => (
-          <div key={field.id} className="flex flex-col gap-2">
-            <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-2">
-              <Input
-                inputMode="numeric"
-                aria-label={`Tier ${i + 1} min sq ft`}
-                placeholder="0"
-                {...register(`areaTiers.${i}.minSqFt`)}
-              />
-              <Input
-                inputMode="numeric"
-                aria-label={`Tier ${i + 1} max sq ft`}
-                placeholder="none"
-                {...register(`areaTiers.${i}.maxSqFt`)}
-              />
-              <Input
-                inputMode="decimal"
-                aria-label={`Tier ${i + 1} surcharge`}
-                placeholder="0.00"
-                {...register(`areaTiers.${i}.surchargeDollars`)}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Remove tier"
-                onClick={() => areaTiers.remove(i)}
-              >
-                <Trash2 />
-              </Button>
-            </div>
-            {(errors.areaTiers?.[i]?.minSqFt ||
-              errors.areaTiers?.[i]?.maxSqFt ||
-              errors.areaTiers?.[i]?.surchargeDollars) && (
-              <FieldError>
-                {errors.areaTiers[i]?.minSqFt?.message ??
-                  errors.areaTiers[i]?.maxSqFt?.message ??
-                  errors.areaTiers[i]?.surchargeDollars?.message}
-              </FieldError>
-            )}
-          </div>
-        ))}
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-fit"
-          onClick={() =>
-            areaTiers.append({ minSqFt: "0", maxSqFt: "", surchargeDollars: "0" })
-          }
-        >
-          <Plus /> Add tier
-        </Button>
-      </fieldset>
-
       {/* Settings */}
       <fieldset className="flex flex-col gap-4">
-        <legend className="text-lawn-primary mb-2 text-lg font-semibold">
-          Settings
-        </legend>
+        <legend className="text-lawn-primary mb-2 text-lg font-semibold">Settings</legend>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
@@ -404,11 +310,7 @@ export function AdminPlanForm({ plan }: { plan?: Plan }) {
 
       <div className="flex items-center gap-3">
         <Button type="submit" size="lg" disabled={isSubmitting}>
-          {isSubmitting
-            ? "Saving…"
-            : isEdit
-              ? "Save changes"
-              : "Create plan"}
+          {isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create plan"}
         </Button>
         <Button
           type="button"
