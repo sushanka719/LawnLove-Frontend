@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Calendar,
+  ClipboardList,
   DollarSign,
   LayoutGrid,
   Settings,
@@ -23,11 +24,11 @@ type NavItem = {
   href?: string;
 };
 
-// Order + icons mirror the Figma agent dashboard (node 1111:8359). Dashboard and
-// Bookings are the built screens today; the rest are placeholders until their
-// pages land.
+// Order + icons mirror the Figma agent dashboard (node 1111:8359). Every screen
+// is now live-wired.
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", icon: LayoutGrid, href: "/agent" },
+  { label: "Jobs", icon: ClipboardList, href: "/agent/jobs" },
   { label: "Bookings", icon: Calendar, href: "/agent/bookings" },
   { label: "Employees", icon: Users, href: "/agent/employees" },
   { label: "Service", icon: Wrench, href: "/agent/service" },

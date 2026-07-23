@@ -14,14 +14,8 @@ import { formatCents } from "@/lib/jobs";
 import { computePlanQuote, isOverMaxArea, type Frequency } from "@/lib/pricing";
 import { planBillingLabel } from "@/lib/plans";
 import { useBookingStore } from "@/lib/store/booking-store";
+import { TIME_WINDOWS } from "@/lib/time-windows";
 import { cn } from "@/lib/utils";
-
-const TIME_WINDOWS = [
-  { value: "morning", title: "Morning", range: "8:00 AM - 11:00 AM" },
-  { value: "midday", title: "Midday", range: "11:00 AM - 2:00 PM" },
-  { value: "afternoon", title: "Afternoon", range: "2:00 PM - 5:00 PM" },
-  { value: "evening", title: "Evening", range: "5:00 PM - 7:00 PM" },
-] as const;
 
 export function ScheduleForm() {
   const router = useRouter();
@@ -31,6 +25,7 @@ export function ScheduleForm() {
   const plan = useBookingStore((state) => state.plan);
   const setPlan = useBookingStore((state) => state.setPlan);
   const setPricing = useBookingStore((state) => state.setPricing);
+  const selectedPricing = useBookingStore((state) => state.pricing);
 
   const { data: plans, isLoading: plansLoading, isError: plansError } = usePlans();
   const {
@@ -245,7 +240,7 @@ export function ScheduleForm() {
         <MeasuredAreaCard
           areaSqFt={property.areaSqFt}
           estimatedAreaSqFt={property.estimatedAreaSqFt}
-          totalPrice={property.totalPrice}
+          totalPrice={plan.planId ? selectedPricing.totalPerVisit : undefined}
         />
 
         <div className="flex w-full flex-col gap-4">
