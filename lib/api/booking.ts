@@ -1,4 +1,5 @@
 import type { JobStatus } from "@/lib/api/agent";
+import type { JobPhoto } from "@/lib/api/customer-jobs";
 import { http } from "@/lib/api/http";
 import type { Frequency } from "@/lib/pricing";
 
@@ -28,11 +29,7 @@ export function createBooking(payload: CreateBookingPayload) {
 // ---- Bookings list + detail (dashboard) ----
 
 export type BookingStatus =
-  | "pendingPayment"
-  | "active"
-  | "pastDue"
-  | "cancelled"
-  | "completed";
+  "pendingPayment" | "active" | "pastDue" | "cancelled" | "completed";
 
 export type Paginated<T> = {
   items: T[];
@@ -74,9 +71,15 @@ export function getCurrentPlans() {
 export type BookingJobSummary = {
   id: string;
   status: JobStatus;
+  visitNumber: number;
+  scheduledDate: string | null;
   completedAt: string | null;
   amount: number | null;
+  // The field-worker (or agent) who completed the visit; null until done.
+  completedBy: string | null;
   review: { rating: number } | null;
+  // Before/after proof photos with short-lived presigned URLs.
+  photos: { before: JobPhoto[]; after: JobPhoto[] };
 };
 
 export type BookingDetail = {
