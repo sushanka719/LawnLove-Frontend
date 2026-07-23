@@ -38,9 +38,10 @@ export function ServicesSummary() {
             </p>
           </div>
         </div>
-        <p className="text-lawn-text-primary font-heading text-2xl font-semibold">
-          ${property.totalPrice}
-          <span className="text-lawn-text-secondary text-base font-medium">/visit</span>
+        <p className="text-lawn-text-secondary text-right text-base font-medium">
+          Pricing shown
+          <br />
+          when you pick a plan
         </p>
       </div>
 

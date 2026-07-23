@@ -5,12 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Calendar,
-  CircleQuestionMark,
-  CreditCard,
+  ClipboardList,
+  DollarSign,
   LayoutGrid,
-  MapPin,
-  Notebook,
   Settings,
+  Users,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,16 +24,16 @@ type NavItem = {
   href?: string;
 };
 
-// Order + icons mirror the Figma agent dashboard (node 972:3144). Dashboard is
-// the only built screen today; the rest are placeholders until their pages land.
+// Order + icons mirror the Figma agent dashboard (node 1111:8359). Every screen
+// is now live-wired.
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", icon: LayoutGrid, href: "/agent" },
-  { label: "Bookings", icon: CreditCard },
-  { label: "Employee", icon: Calendar },
-  { label: "Service", icon: MapPin },
-  { label: "Earning", icon: Notebook },
-  { label: "Support", icon: CircleQuestionMark },
-  { label: "Settings", icon: Settings },
+  { label: "Jobs", icon: ClipboardList, href: "/agent/jobs" },
+  { label: "Bookings", icon: Calendar, href: "/agent/bookings" },
+  { label: "Employees", icon: Users, href: "/agent/employees" },
+  { label: "Service", icon: Wrench, href: "/agent/service" },
+  { label: "Earning", icon: DollarSign, href: "/agent/earning" },
+  { label: "Settings", icon: Settings, href: "/agent/settings" },
 ];
 
 function isActive(pathname: string, href?: string) {
