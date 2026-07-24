@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Leaf } from "lucide-react";
+import { toast } from "sonner";
 
 import { BookingStatusBadge } from "@/components/dashboard/booking-status-badge";
 import { ChangePasswordDialog } from "@/components/dashboard/change-password-dialog";
@@ -14,9 +15,10 @@ import {
   useCancelAccountDeletion,
   useUpdateNotifications,
 } from "@/hooks/use-account";
-import { useCurrentPlans } from "@/hooks/use-bookings";
+import { useCancelSubscription, useCurrentPlans } from "@/hooks/use-bookings";
 import type { NotificationPreferences } from "@/lib/api/account";
 import type { CurrentPlan } from "@/lib/api/booking";
+import { ApiError } from "@/lib/api/http";
 import { formatCents } from "@/lib/jobs";
 
 function SettingsSection({
@@ -98,7 +100,7 @@ function NotificationsSection() {
         title={'SMS "on the way" alerts'}
         description="Text me when my pro is en route"
         badge={
-          <span className="rounded-full bg-black/[0.06] px-2 py-0.5 text-xs font-semibold tracking-tight text-lawn-text-tertiary">
+          <span className="text-lawn-text-tertiary rounded-full bg-black/[0.06] px-2 py-0.5 text-xs font-semibold tracking-tight">
             Coming soon
           </span>
         }
@@ -129,6 +131,30 @@ function NotificationsSection() {
 // ---- Plan ----------------------------------------------------------------
 
 function PlanCard({ plan }: { plan: CurrentPlan }) {
+  const cancelSubscription = useCancelSubscription();
+  // Once cancel succeeds we keep the card in a "Cancelling..." state; the
+  // webhook flips the booking async, after which the refetched plan drops off.
+  const [requested, setRequested] = useState(false);
+  const cancellable = plan.status === "active" || plan.status === "pastDue";
+  const pending = cancelSubscription.isPending || requested;
+
+  const handleCancel = async () => {
+    if (
+      !window.confirm(
+        "Cancel this plan? Your upcoming visits will be cancelled and you won't be billed again.",
+      )
+    ) {
+      return;
+    }
+    try {
+      await cancelSubscription.mutateAsync(plan.id);
+      setRequested(true);
+      toast.success("Plan cancelled. Your upcoming visits have been cancelled.");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Couldn't cancel that plan.");
+    }
+  };
+
   return (
     <div className="bg-lawn-bg-2 flex items-center gap-6 rounded-xl p-6 drop-shadow-[0px_4px_8px_rgba(74,74,74,0.14)] lg:p-8">
       <div className="bg-lawn-badge-bg hidden size-12 shrink-0 items-center justify-center rounded-xl sm:flex">
@@ -151,12 +177,24 @@ function PlanCard({ plan }: { plan: CurrentPlan }) {
           {plan.address}
         </p>
       </div>
-      <Link
-        href={`/dashboard/bookings/${plan.id}`}
-        className="border-lawn-primary-light text-lawn-primary hover:bg-lawn-primary-light/10 shrink-0 rounded-xl border-[1.2px] px-8 py-3 text-base font-semibold tracking-tight whitespace-nowrap transition-colors"
-      >
-        Manage
-      </Link>
+      <div className="flex shrink-0 items-center gap-2">
+        <Link
+          href={`/dashboard/bookings/${plan.id}`}
+          className="border-lawn-primary-light text-lawn-primary hover:bg-lawn-primary-light/10 shrink-0 rounded-xl border-[1.2px] px-8 py-3 text-base font-semibold tracking-tight whitespace-nowrap transition-colors"
+        >
+          Manage
+        </Link>
+        {cancellable && (
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={pending}
+            className="shrink-0 rounded-xl border-[1.2px] border-[#e02929]/40 px-8 py-3 text-base font-semibold tracking-tight whitespace-nowrap text-[#e02929] transition-colors hover:bg-[#e02929]/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pending ? "Cancelling..." : "Cancel"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -173,14 +211,13 @@ function PlanSection() {
       ) : isLoading ? (
         <Skeleton className="h-28 w-full rounded-xl" />
       ) : !plans || plans.length === 0 ? (
-        <div className="border-lawn-primary-light/40 flex flex-col items-start gap-3 rounded-xl border border-dashed bg-lawn-bg-2 p-6 lg:p-8">
+        <div className="border-lawn-primary-light/40 bg-lawn-bg-2 flex flex-col items-start gap-3 rounded-xl border border-dashed p-6 lg:p-8">
           <div>
             <p className="text-lawn-text-primary text-lg font-semibold tracking-tight">
               No active plan
             </p>
             <p className="text-lawn-text-secondary text-base font-medium tracking-tight">
-              You don&apos;t have a recurring plan yet. Book a visit to get
-              started.
+              You don&apos;t have a recurring plan yet. Book a visit to get started.
             </p>
           </div>
           <Link

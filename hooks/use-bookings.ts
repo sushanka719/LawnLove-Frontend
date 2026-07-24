@@ -1,8 +1,14 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import {
+  cancelSubscription,
   getBooking,
   getBookings,
   getCurrentPlans,
@@ -31,6 +37,19 @@ export function useCurrentPlans() {
   return useQuery({
     queryKey: currentPlansQueryKey,
     queryFn: getCurrentPlans,
+  });
+}
+
+// Cancel a recurring plan. Invalidates the current-plans + bookings queries so
+// the cancelled plan drops off once the webhook has flipped its status.
+export function useCancelSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => cancelSubscription(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: currentPlansQueryKey });
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+    },
   });
 }
 
