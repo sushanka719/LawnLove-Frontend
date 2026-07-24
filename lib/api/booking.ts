@@ -71,6 +71,13 @@ export function getCurrentPlans() {
   return http.get<CurrentPlan[]>("/bookings/current-plans");
 }
 
+// Customer-initiated cancel of a recurring plan. The backend cancels the Stripe
+// subscription; the `customer.subscription.deleted` webhook then flips the
+// booking to `cancelled` and drops its upcoming visits.
+export function cancelSubscription(id: string) {
+  return http.post<{ id: string; status: string }>(`/bookings/${id}/cancel-subscription`);
+}
+
 export type BookingJobSummary = {
   id: string;
   status: JobStatus;

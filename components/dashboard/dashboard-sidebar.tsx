@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   Calendar,
   CircleQuestionMark,
-  CreditCard,
   LayoutGrid,
   MapPin,
   Notebook,
@@ -28,7 +27,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Overview", icon: LayoutGrid, href: "/dashboard" },
   { label: "Bookings", icon: Calendar, href: "/dashboard/bookings" },
   { label: "Address", icon: MapPin, href: "/dashboard/address" },
-  { label: "Payment methods", icon: CreditCard, href: "/dashboard/payment-methods" },
   { label: "Invoices", icon: Notebook, href: "/dashboard/invoices" },
   { label: "Settings", icon: Settings, href: "/dashboard/settings" },
   { label: "Support", icon: CircleQuestionMark, href: "/dashboard/support" },
